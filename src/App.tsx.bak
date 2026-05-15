@@ -1,0 +1,2383 @@
+import {
+  Activity,
+  ArrowRight,
+  Banknote,
+  BarChart3,
+  BookOpen,
+  Bot,
+  BriefcaseBusiness,
+  Building2,
+  Check,
+  ChevronDown,
+  Clock3,
+  Code2,
+  Copy,
+  Download,
+  FileText,
+  Headphones,
+  Home,
+  Layers3,
+  LockKeyhole,
+  LogOut,
+  Mail,
+  Menu,
+  Mic2,
+  Pause,
+  Network,
+  Play,
+  Radio,
+  Search,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Upload,
+  Users,
+  Volume2,
+  X,
+  Zap,
+} from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
+
+type DashboardTab = "overview" | "voice" | "models" | "history" | "settings";
+type MarketingPage = "home" | "docs" | "about" | "blog";
+type ClonedVoice = {
+  id: string;
+  name: string;
+  sampleFileName: string;
+  audioBase64: string;
+  createdAt: string;
+};
+type UploadedVoice = {
+  audio_base64: string;
+  filename: string;
+};
+type GeneratedVoice = {
+  id: string;
+  title: string;
+  model: string;
+  voice: string;
+  duration: string;
+  status: "Ready" | "Processing";
+  createdAt: string;
+};
+type AudioGenerationResponse = {
+  audio_url?: string;
+  audioUrl?: string;
+  url?: string;
+  file_url?: string;
+  fileUrl?: string;
+  audio_base64?: string;
+  audioBase64?: string;
+  audio?: string;
+};
+type EmotionListResponse =
+  | string[]
+  | {
+      emotions?: string[];
+      data?: string[];
+      results?: string[];
+    };
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+type GoogleAuthResponse = {
+  access_token?: string;
+  token?: string;
+  user?: unknown;
+};
+type GoogleProfile = {
+  email?: string;
+  name?: string;
+  picture?: string;
+  sub?: string;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (options: {
+            client_id: string;
+            callback: (response: GoogleCredentialResponse) => void;
+          }) => void;
+          prompt: (callback?: (notification: {
+            isNotDisplayed: () => boolean;
+            isSkippedMoment: () => boolean;
+            getNotDisplayedReason: () => string;
+            getSkippedReason: () => string;
+          }) => void) => void;
+        };
+      };
+    };
+  }
+}
+
+type NavDropdown = {
+  label: string;
+  items: { label: string; href: string }[];
+};
+
+const modelItems = [
+  { label: "Emotion Model", href: "#emotion-model" },
+  { label: "No Emotion Model", href: "#no-emotion-model" },
+];
+
+const resourceItems = [
+  { label: "Docs", href: "/docs" },
+  { label: "About", href: "/about" },
+  { label: "Blog", href: "/blog" },
+];
+
+const codeSample = `const response = await paysys.voice.generate({
+  model: "emotion-voice-v1",
+  voice: "nora-enterprise",
+  format: "wav_stream",
+  text: "Welcome back. Your secure voice experience is ready."
+});
+
+for await (const chunk of response.audio) {
+  player.write(chunk);
+}`;
+
+function App() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [signinOpen, setSigninOpen] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [page, setPage] = useState<MarketingPage>(() => getPageFromPath());
+
+  useEffect(() => {
+    const handlePopState = () => setPage(getPageFromPath());
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const node = document.querySelector(id);
+    if (node) node.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.pushState(null, "", id);
+    setMenuOpen(false);
+  };
+
+  const openSignin = () => {
+    setSigninOpen(true);
+    setMenuOpen(false);
+  };
+
+  const openPage = (nextPage: MarketingPage) => {
+    setPage(nextPage);
+    setMenuOpen(false);
+    const url = nextPage === "home" ? "/" : `/${nextPage}`;
+    window.history.pushState(null, "", url);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSignin = () => {
+    setSigninOpen(false);
+    setIsSignedIn(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  if (isSignedIn) {
+    return <Dashboard onLogout={() => setIsSignedIn(false)} />;
+  }
+
+  return (
+    <div className="min-h-screen overflow-hidden bg-ink-950 text-slate-100">
+      <div className="pointer-events-none fixed inset-0 bg-radial-field opacity-90" />
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:72px_72px] opacity-20" />
+
+      <Header
+        menuOpen={menuOpen}
+        setMenuOpen={setMenuOpen}
+        scrollTo={scrollTo}
+        openSignin={openSignin}
+        openPage={openPage}
+      />
+
+      {page === "home" ? (
+        <main className="relative z-10">
+          <Hero scrollTo={scrollTo} openSignin={openSignin} />
+          <Models />
+          <Resources openPage={openPage} />
+          <Pricing scrollTo={scrollTo} openSignin={openSignin} />
+          <Contact />
+        </main>
+      ) : (
+        <ResourcePage page={page} openPage={openPage} openSignin={openSignin} />
+      )}
+
+      <Footer scrollTo={scrollTo} openSignin={openSignin} openPage={openPage} />
+      {signinOpen && (
+        <SignInModal onClose={() => setSigninOpen(false)} onSignin={handleSignin} />
+      )}
+    </div>
+  );
+}
+
+function getPageFromPath(): MarketingPage {
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
+  return path === "docs" || path === "about" || path === "blog" ? path : "home";
+}
+
+function getDashboardTabFromHash(): DashboardTab {
+  const tab = window.location.hash.replace("#dashboard/", "");
+  return tab === "voice" ||
+    tab === "models" ||
+    tab === "history" ||
+    tab === "settings"
+    ? tab
+    : "overview";
+}
+
+const clonedVoicesStorageKey = "paysys-cloned-voices";
+const generatedVoicesStorageKey = "paysys-generated-voices";
+const voiceApiBaseUrl =
+  import.meta.env.VITE_VOICE_API_BASE_URL || "http://localhost:8000";
+const voiceApiToken = import.meta.env.VITE_VOICE_API_TOKEN || "";
+const defaultVoiceReferenceId =
+  import.meta.env.VITE_DEFAULT_VOICE_REFERENCE_ID || "voice_aad6ad520c93";
+const emotionsApiPath = import.meta.env.VITE_EMOTIONS_API_PATH || "/emotions";
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const googleAuthApiPath = import.meta.env.VITE_GOOGLE_AUTH_API_PATH || "/auth/google";
+
+function loadSavedClonedVoices(): ClonedVoice[] {
+  try {
+    const saved = window.localStorage.getItem(clonedVoicesStorageKey);
+    return saved ? (JSON.parse(saved) as ClonedVoice[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveClonedVoices(voices: ClonedVoice[]) {
+  window.localStorage.setItem(clonedVoicesStorageKey, JSON.stringify(voices));
+}
+
+function loadGeneratedVoices(): GeneratedVoice[] {
+  try {
+    const saved = window.localStorage.getItem(generatedVoicesStorageKey);
+    return saved ? (JSON.parse(saved) as GeneratedVoice[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveGeneratedVoices(voices: GeneratedVoice[]) {
+  window.localStorage.setItem(generatedVoicesStorageKey, JSON.stringify(voices));
+}
+
+function saveAuthSession(data: GoogleAuthResponse) {
+  const token = data.access_token || data.token;
+  if (token) window.localStorage.setItem("paysys-auth-token", token);
+  if (data.user) window.localStorage.setItem("paysys-auth-user", JSON.stringify(data.user));
+}
+
+function decodeGoogleCredential(credential: string): GoogleProfile {
+  try {
+    const payload = credential.split(".")[1];
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      window
+        .atob(base64)
+        .split("")
+        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
+        .join("")
+    );
+    return JSON.parse(json) as GoogleProfile;
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalGoogleSession(credential: string) {
+  const profile = decodeGoogleCredential(credential);
+  window.localStorage.setItem("paysys-auth-token", credential);
+  window.localStorage.setItem("paysys-auth-user", JSON.stringify(profile));
+}
+
+async function authenticateWithGoogleCredential(credential: string) {
+  let response: Response;
+  const authUrl = `${voiceApiBaseUrl}${googleAuthApiPath}`;
+
+  try {
+    response = await fetch(authUrl, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ credential }),
+    });
+  } catch {
+    saveLocalGoogleSession(credential);
+    return;
+  }
+
+  if (!response.ok) {
+    saveLocalGoogleSession(credential);
+    return;
+  }
+
+  const data = (await response.json()) as GoogleAuthResponse;
+  saveAuthSession(data);
+}
+
+function resolveAudioUrl(response: AudioGenerationResponse) {
+  return (
+    response.audio_url ||
+    response.audioUrl ||
+    response.url ||
+    response.file_url ||
+    response.fileUrl ||
+    ""
+  );
+}
+
+function resolveBase64Audio(response: AudioGenerationResponse) {
+  return response.audio_base64 || response.audioBase64 || response.audio || "";
+}
+
+function fileToUploadedVoice(file: File): Promise<UploadedVoice> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      resolve({
+        audio_base64: result.includes(",") ? result.split(",")[1] : result,
+        filename: file.name,
+      });
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function normalizeEmotionList(data: EmotionListResponse) {
+  const list = Array.isArray(data) ? data : data.emotions || data.data || data.results || [];
+  return list.map((emotion) => String(emotion)).filter(Boolean);
+}
+
+async function fetchEmotionTypes() {
+  if (!voiceApiToken) {
+    throw new Error("Missing VITE_VOICE_API_TOKEN in .env");
+  }
+
+  const response = await fetch(`${voiceApiBaseUrl}${emotionsApiPath}`, {
+    headers: {
+      accept: "application/json",
+      Authorization: `Bearer ${voiceApiToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Emotion list API failed with ${response.status}`);
+  }
+
+  const emotions = normalizeEmotionList((await response.json()) as EmotionListResponse);
+  if (emotions.length === 0) {
+    throw new Error("Emotion list API returned no emotions");
+  }
+  return emotions;
+}
+
+function Header({
+  menuOpen,
+  setMenuOpen,
+  scrollTo,
+  openSignin,
+  openPage,
+}: {
+  menuOpen: boolean;
+  setMenuOpen: (open: boolean) => void;
+  scrollTo: (id: string) => void;
+  openSignin: () => void;
+  openPage: (page: MarketingPage) => void;
+}) {
+  return (
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-ink-950/80 backdrop-blur-2xl">
+      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <button
+          onClick={() => openPage("home")}
+          className="group flex items-center gap-3"
+          aria-label="Paysys home"
+        >
+          <span className="grid h-10 w-10 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200 shadow-glow">
+            <Radio size={20} />
+          </span>
+          <span className="text-xl font-semibold tracking-[0.18em] text-white">
+            Paysys
+          </span>
+        </button>
+
+        <div className="hidden items-center gap-2 lg:flex">
+          <DesktopDropdown label="Models" items={modelItems} />
+          <DesktopDropdown label="Resources" items={resourceItems} openPage={openPage} />
+          <NavButton onClick={() => scrollTo("#pricing")}>Pricing</NavButton>
+          <NavButton onClick={() => scrollTo("#contact")}>Contact</NavButton>
+          <NavButton onClick={openSignin}>Sign In</NavButton>
+        </div>
+
+        <button
+          className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/5 text-white lg:hidden"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </nav>
+
+      {menuOpen && (
+        <div className="border-t border-white/10 bg-ink-900/95 px-4 py-5 backdrop-blur-xl lg:hidden">
+          <MobileDropdown label="Models" items={modelItems} onNavigate={scrollTo} />
+          <MobileDropdown
+            label="Resources"
+            items={resourceItems}
+            onNavigate={(href) => {
+              const key = href.replace("/", "") as MarketingPage;
+              openPage(key);
+            }}
+          />
+          <button className="mobile-nav-button" onClick={() => scrollTo("#pricing")}>
+            Pricing
+          </button>
+          <button className="mobile-nav-button" onClick={() => scrollTo("#contact")}>
+            Contact
+          </button>
+          <button className="mobile-nav-button" onClick={openSignin}>
+            Sign In
+          </button>
+        </div>
+      )}
+    </header>
+  );
+}
+
+function DesktopDropdown({
+  label,
+  items,
+  openPage,
+}: NavDropdown & {
+  openPage?: (page: MarketingPage) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button className="nav-button" onClick={() => setOpen(!open)} aria-expanded={open}>
+        {label}
+        <ChevronDown className={`transition ${open ? "rotate-180" : ""}`} size={16} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full w-56 pt-3">
+          <div className="rounded-2xl border border-white/10 bg-ink-900/95 p-2 shadow-panel backdrop-blur-xl">
+            {items.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={(event) => {
+                  setOpen(false);
+                  if (openPage && item.href.startsWith("/")) {
+                    event.preventDefault();
+                    openPage(item.href.replace("/", "") as MarketingPage);
+                  }
+                }}
+                className="block rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileDropdown({
+  label,
+  items,
+  onNavigate,
+}: NavDropdown & { onNavigate: (href: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-2">
+      <button className="mobile-nav-button" onClick={() => setOpen(!open)}>
+        <span>{label}</span>
+        <ChevronDown className={open ? "rotate-180" : ""} size={16} />
+      </button>
+      {open && (
+        <div className="ml-3 mt-1 space-y-1 border-l border-white/10 pl-3">
+          {items.map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate(item.href);
+              }}
+              className="block rounded-xl px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NavButton({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button className="nav-button" onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
+function Hero({
+  scrollTo,
+  openSignin,
+}: {
+  scrollTo: (id: string) => void;
+  openSignin: () => void;
+}) {
+  return (
+    <section id="top" className="section-pad pt-32 sm:pt-36 lg:pt-40">
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
+        <div className="max-w-3xl">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
+            <Sparkles size={16} />
+            Voice-over models for real-time business audio
+          </div>
+          <h1 className="text-balance text-5xl font-semibold leading-[1.02] text-white sm:text-6xl lg:text-7xl">
+            Build realistic voice AI experiences with expressive control.
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+            Paysys helps teams generate polished voice-overs, IVR prompts,
+            support prompts, product narration, and production-ready speech with
+            fast, reliable voice models.
+          </p>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <button className="primary-button" onClick={openSignin}>
+              Get Started
+              <ArrowRight size={18} />
+            </button>
+          </div>
+        </div>
+
+        <VoiceDemoCard />
+      </div>
+    </section>
+  );
+}
+
+function VoiceDemoCard() {
+  const [active, setActive] = useState("Emotion Model");
+  const [emotionType, setEmotionType] = useState("");
+  const [sampleText, setSampleText] = useState(
+    "Your payment confirmation is ready. This voice can sound calm, clear, and confident across every customer touchpoint."
+  );
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewAudioUrl, setPreviewAudioUrl] = useState("");
+  const [previewError, setPreviewError] = useState("");
+  const [emotionTypes, setEmotionTypes] = useState<string[]>([]);
+  const [isLoadingEmotions, setIsLoadingEmotions] = useState(false);
+  const [emotionListError, setEmotionListError] = useState("");
+  const bars = [30, 54, 76, 42, 88, 62, 48, 95, 58, 72, 40, 83, 52, 68, 34, 78, 46, 90];
+
+  const loadEmotions = async () => {
+    setIsLoadingEmotions(true);
+    setEmotionListError("");
+
+    try {
+      const nextEmotions = await fetchEmotionTypes();
+      setEmotionTypes(nextEmotions);
+      setEmotionType(nextEmotions[0]);
+    } catch (error) {
+      setEmotionListError(error instanceof Error ? error.message : "Unable to load emotions");
+    } finally {
+      setIsLoadingEmotions(false);
+    }
+  };
+
+  const handlePreview = async () => {
+    setIsPreviewing(true);
+    setPreviewError("");
+
+    try {
+      if (!voiceApiToken) {
+        throw new Error("Missing VITE_VOICE_API_TOKEN in .env");
+      }
+
+      const isEmotionModel = active === "Emotion Model";
+      if (isEmotionModel && !emotionType) {
+        throw new Error("Load and select an emotion first");
+      }
+      const endpoint = isEmotionModel
+        ? "/generate-audio-emotion"
+        : "/generate-audio-no-emotion";
+      const payload = {
+        text: sampleText,
+        language: "ur",
+        voice_reference_id: defaultVoiceReferenceId,
+        ...(isEmotionModel ? { emotion: emotionType } : {}),
+      };
+
+      const response = await fetch(`${voiceApiBaseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          Authorization: `Bearer ${voiceApiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Audio API failed with ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      let nextAudioUrl = "";
+      if (contentType.includes("audio/")) {
+        const blob = await response.blob();
+        nextAudioUrl = URL.createObjectURL(blob);
+      } else {
+        const data = (await response.json()) as AudioGenerationResponse;
+        const responseAudioUrl = resolveAudioUrl(data);
+        const base64Audio = resolveBase64Audio(data);
+        nextAudioUrl =
+          responseAudioUrl || (base64Audio ? `data:audio/wav;base64,${base64Audio}` : "");
+      }
+
+      if (!nextAudioUrl) {
+        throw new Error("Audio URL/base64 not found in API response");
+      }
+
+      setPreviewAudioUrl(nextAudioUrl);
+      await new Audio(nextAudioUrl).play();
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : "Audio preview failed");
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <div className="absolute -inset-4 rounded-[2rem] bg-cyan-400/10 blur-3xl" />
+      <div className="relative rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-panel backdrop-blur-2xl sm:p-6">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-slate-400">Live voice preview</p>
+            <h2 className="mt-1 text-2xl font-semibold text-white">Studio Console</h2>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-ink-950/70 p-4">
+          <div className="mb-4 flex flex-wrap gap-2">
+            {["Emotion Model", "No Emotion Model"].map((item) => (
+              <button
+                key={item}
+                onClick={() => setActive(item)}
+                className={`rounded-full px-4 py-2 text-sm transition ${
+                  active === item
+                    ? "bg-cyan-300 text-ink-950"
+                    : "bg-white/10 text-slate-300 hover:bg-white/20"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          {active === "Emotion Model" ? (
+            <div className="mb-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/10 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+                Emotion type
+              </p>
+              <button
+                className="mt-3 rounded-full border border-cyan-300/30 bg-ink-950/70 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-white/10 disabled:opacity-60"
+                onClick={loadEmotions}
+                disabled={isLoadingEmotions}
+                type="button"
+              >
+                {isLoadingEmotions ? "Loading emotions..." : "Load emotions"}
+              </button>
+              {emotionListError && (
+                <p className="mt-2 text-xs leading-5 text-red-200">{emotionListError}</p>
+              )}
+              {emotionTypes.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {emotionTypes.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setEmotionType(type)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        emotionType === type
+                          ? "bg-cyan-300 text-ink-950"
+                          : "bg-white/10 text-slate-300 hover:bg-white/20"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mb-4 rounded-2xl border border-white/10 bg-white/5 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
+                Neutral mode
+              </p>
+              <p className="mt-2 text-xs leading-5 text-slate-400">
+                Emotion controls are disabled for standard narration and IVR output.
+              </p>
+            </div>
+          )}
+
+          <div className="flex h-36 items-center gap-2 rounded-2xl bg-[linear-gradient(135deg,rgba(59,167,255,0.12),rgba(141,108,255,0.08))] px-4">
+            {bars.map((height, index) => (
+              <span
+                key={index}
+                className="w-full rounded-full bg-gradient-to-t from-cyan-300 to-violet-300 opacity-90 transition duration-300 hover:opacity-100"
+                style={{ height: `${height}%` }}
+              />
+            ))}
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/10 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <label className="text-xs uppercase tracking-[0.2em] text-cyan-200">
+                Sample text
+              </label>
+              <button
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cyan-300 text-ink-950 shadow-glow transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Preview voice"
+                disabled={isPreviewing}
+                onClick={handlePreview}
+              >
+                {isPreviewing ? <Activity size={18} /> : <Play size={18} fill="currentColor" />}
+              </button>
+            </div>
+            <textarea
+              className="mt-3 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-ink-950/70 p-3 text-sm leading-6 text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-300/70 focus:ring-4 focus:ring-cyan-300/10"
+              value={sampleText}
+              onChange={(event) => setSampleText(event.target.value)}
+              placeholder="Write text to preview voice..."
+            />
+            {previewError && (
+              <p className="mt-3 text-xs leading-5 text-red-200">{previewError}</p>
+            )}
+            {previewAudioUrl && (
+              <audio className="mt-3 w-full" controls src={previewAudioUrl}>
+                <track kind="captions" />
+              </audio>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          <MiniMetric label="Latency" value="48 ms" />
+          <MiniMetric label="Quality" value="HD" />
+          <MiniMetric label="Stream" value="Live" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-white/10 p-3 text-center">
+      <p className="break-words text-sm font-semibold leading-tight text-white sm:text-base">
+        {value}
+      </p>
+      <p className="mt-1 text-xs text-slate-400">{label}</p>
+    </div>
+  );
+}
+
+function Stats() {
+  const stats = [
+    ["Low latency", "Sub-second streaming response"],
+    ["Multiple voice styles", "Expressive and neutral delivery"],
+    ["Real-time generation", "Voice output while text arrives"],
+    ["Enterprise-ready API", "Secure integration patterns"],
+  ];
+
+  return (
+    <section className="section-pad">
+      <div className="mx-auto grid max-w-7xl gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+        {stats.map(([title, text]) => (
+          <div key={title} className="soft-card p-5">
+            <p className="text-2xl font-semibold text-white">{title}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">{text}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Models() {
+  return (
+    <section id="models" className="section-pad scroll-mt-24">
+      <SectionIntro
+        eyebrow="Voice models"
+        title="Choose the delivery style your product needs."
+        text="Two production-ready model families give teams expressive voice-over control or clean neutral narration for structured workflows."
+      />
+      <div className="mx-auto mt-12 grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+        <ModelCard
+          id="emotion-model"
+          icon={<Sparkles />}
+          title="Emotion Model"
+          description="Voice model that supports expressive, emotional, natural voice-over output."
+          features={["Emotion-aware delivery", "Natural pacing", "Brand voice tuning", "Narration and character reads"]}
+        />
+        <ModelCard
+          id="no-emotion-model"
+          icon={<Bot />}
+          title="No Emotion Model"
+          description="Clean neutral voice model for professional, robotic, IVR, announcement, and standard narration use cases."
+          features={["Neutral tone", "IVR-ready clarity", "Consistent pronunciation", "Operational announcements"]}
+        />
+      </div>
+    </section>
+  );
+}
+
+function ModelCard({
+  id,
+  icon,
+  title,
+  description,
+  features,
+}: {
+  id: string;
+  icon: ReactNode;
+  title: string;
+  description: string;
+  features: string[];
+}) {
+  return (
+    <article id={id} className="group soft-card scroll-mt-28 p-6 transition duration-300 hover:-translate-y-1 hover:border-cyan-300/40 hover:shadow-glow">
+      <div className="flex items-start justify-between gap-5">
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+          {icon}
+        </div>
+        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-400">
+          API ready
+        </span>
+      </div>
+      <h3 className="mt-7 text-3xl font-semibold text-white">{title}</h3>
+      <p className="mt-4 min-h-20 text-base leading-7 text-slate-300">{description}</p>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {features.map((feature) => (
+          <div key={feature} className="flex items-center gap-2 text-sm text-slate-300">
+            <Check className="text-cyan-300" size={16} />
+            {feature}
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function Performance() {
+  const cards = [
+    ["Speed", "Optimized streaming output keeps conversations and playback responsive.", <Zap />],
+    ["Naturalness", "Prosody and pacing are tuned for scripts, prompts, and narration.", <Mic2 />],
+    ["Clarity", "Clean pronunciation and crisp audio help users understand every word.", <Headphones />],
+    ["Reliability", "Designed for stable product workloads and monitored API delivery.", <ShieldCheck />],
+  ];
+
+  return (
+    <section className="section-pad">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
+        <div>
+          <SectionIntro
+            align="left"
+            eyebrow="Quality and performance"
+            title="Fast, clear audio for serious voice products."
+            text="Paysys balances speed, natural sound, and operational dependability so teams can move from prototype to production with confidence."
+          />
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {cards.map(([title, text, icon]) => (
+              <div key={title as string} className="soft-card p-5">
+                <div className="mb-4 text-cyan-200">{icon}</div>
+                <h3 className="text-xl font-semibold text-white">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="soft-card p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400">Production signal</p>
+              <h3 className="mt-1 text-2xl font-semibold text-white">Voice health board</h3>
+            </div>
+            <Activity className="text-cyan-300" />
+          </div>
+          <HealthBar label="Latency" value="52 ms" width="22%" tone="cyan" />
+          <HealthBar label="Audio quality" value="97%" width="97%" tone="violet" />
+          <HealthBar label="API uptime" value="99.9%" width="99%" tone="lime" />
+          <HealthBar label="Stream stability" value="96%" width="96%" tone="blue" />
+          <div className="mt-8 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-5">
+            <p className="text-sm leading-6 text-cyan-50">
+              Real-time observability gives product teams a clear view of voice
+              quality, generation speed, and integration health.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HealthBar({
+  label,
+  value,
+  width,
+  tone,
+}: {
+  label: string;
+  value: string;
+  width: string;
+  tone: "cyan" | "violet" | "lime" | "blue";
+}) {
+  const toneClass = {
+    cyan: "from-cyan-300 to-teal-300",
+    violet: "from-violet-300 to-fuchsia-300",
+    lime: "from-lime-300 to-cyan-300",
+    blue: "from-blue-300 to-cyan-300",
+  }[tone];
+
+  return (
+    <div className="mb-5">
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="text-slate-300">{label}</span>
+        <span className="font-semibold text-white">{value}</span>
+      </div>
+      <div className="h-3 overflow-hidden rounded-full bg-white/10">
+        <div className={`h-full rounded-full bg-gradient-to-r ${toneClass}`} style={{ width }} />
+      </div>
+    </div>
+  );
+}
+
+function Developer() {
+  return (
+    <section className="section-pad">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+        <div className="flex flex-col justify-center">
+          <SectionIntro
+            align="left"
+            eyebrow="Developer API"
+            title="Integrate voice generation without slowing your roadmap."
+            text="Use REST-style endpoints, SDK-ready architecture, streaming output, and predictable payloads for web, mobile, internal tools, and contact-center systems."
+          />
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {[
+              ["REST API", <Network />],
+              ["SDK-ready", <Code2 />],
+              ["Streaming output", <Radio />],
+              ["Easy integration", <LockKeyhole />],
+            ].map(([label, icon]) => (
+              <div key={label as string} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 p-4">
+                <span className="text-cyan-200">{icon}</span>
+                <span className="font-medium text-white">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#070b17] shadow-panel">
+          <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-5 py-4">
+            <span className="h-3 w-3 rounded-full bg-red-400" />
+            <span className="h-3 w-3 rounded-full bg-amber-300" />
+            <span className="h-3 w-3 rounded-full bg-emerald-300" />
+            <span className="ml-3 text-sm text-slate-400">generateVoice.ts</span>
+          </div>
+          <pre className="overflow-x-auto p-5 text-sm leading-7 text-cyan-50">
+            <code>{codeSample}</code>
+          </pre>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function UseCases() {
+  const useCases = [
+    ["Customer support", "Natural responses for guided support experiences.", <Headphones />],
+    ["IVR systems", "Clear menu prompts and call-flow announcements.", <PhoneIcon />],
+    ["Banking voice flows", "Secure-sounding voice journeys for financial services.", <Banknote />],
+    ["Marketing voice-overs", "Expressive reads for campaigns and product videos.", <Sparkles />],
+    ["Product demos", "Consistent narration for demos, tours, and onboarding.", <BriefcaseBusiness />],
+    ["Training narration", "Consistent audio for internal courses and explainers.", <Building2 />],
+  ];
+
+  return (
+    <section className="section-pad">
+      <SectionIntro
+        eyebrow="Use cases"
+        title="One voice-over workspace for core business content."
+        text="Deploy polished audio experiences anywhere your customers or teams need clear spoken guidance."
+      />
+      <div className="mx-auto mt-12 grid max-w-7xl gap-5 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 lg:px-8">
+        {useCases.map(([title, text, icon]) => (
+          <div key={title as string} className="soft-card p-5 transition hover:-translate-y-1 hover:border-violet-300/40">
+            <div className="mb-5 text-violet-200">{icon}</div>
+            <h3 className="text-xl font-semibold text-white">{title}</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PhoneIcon() {
+  return <Volume2 />;
+}
+
+function Resources({
+  openPage,
+}: {
+  openPage: (page: MarketingPage) => void;
+}) {
+  const resources = [
+    ["Docs", "/docs", "Implementation guides, API details, and model references.", <BookOpen />],
+    ["About", "/about", "Learn how Paysys approaches voice AI for businesses.", <FileText />],
+    ["Blog", "/blog", "Product updates, engineering notes, and voice AI ideas.", <Mail />],
+  ];
+
+  return (
+    <section id="resources" className="section-pad scroll-mt-24">
+      <SectionIntro
+        eyebrow="Resources"
+        title="Everything teams need to evaluate and build."
+        text="Start with documentation, learn about Paysys, or follow product updates."
+      />
+      <div className="mx-auto mt-12 grid max-w-7xl gap-5 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
+        {resources.map(([title, href, text, icon]) => (
+          <a
+            key={title as string}
+            href={href as string}
+            onClick={(event) => {
+              event.preventDefault();
+              openPage((href as string).replace("/", "") as MarketingPage);
+            }}
+            className="soft-card group p-6 transition hover:-translate-y-1 hover:border-cyan-300/40"
+          >
+            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-cyan-200">
+              {icon}
+            </div>
+            <h3 className="text-2xl font-semibold text-white">{title}</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-cyan-200">
+              Open
+              <ArrowRight className="transition group-hover:translate-x-1" size={16} />
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Pricing({
+  scrollTo,
+  openSignin,
+}: {
+  scrollTo: (id: string) => void;
+  openSignin: () => void;
+}) {
+  const plans = [
+    {
+      name: "Starter",
+      price: "$0",
+      detail: "Trial workspace",
+      cta: "Start trial",
+      featured: false,
+      features: ["10K demo characters", "Basic voice previews", "Community support"],
+    },
+    {
+      name: "Business",
+      price: "$49",
+      detail: "per month",
+      cta: "Choose Business",
+      featured: true,
+      features: ["1M voice characters", "Streaming API", "Commercial usage", "Priority email support"],
+    },
+    {
+      name: "Enterprise",
+      price: "Custom",
+      detail: "Contact",
+      cta: "Contact",
+      featured: false,
+      features: ["Custom models", "Security review", "Dedicated support", "Volume pricing"],
+    },
+  ];
+
+  return (
+    <section id="pricing" className="section-pad scroll-mt-24">
+      <SectionIntro
+        eyebrow="Pricing"
+        title="Plans for pilots, products, and enterprise rollouts."
+        text="Dummy pricing for now, ready to connect to billing or a sales workflow later."
+      />
+      <div className="mx-auto mt-12 grid max-w-7xl gap-5 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
+        {plans.map((plan) => (
+          <div
+            key={plan.name}
+            className={`rounded-[1.5rem] border p-6 shadow-panel backdrop-blur-xl ${
+              plan.featured
+                ? "border-cyan-300/50 bg-cyan-300/10"
+                : "border-white/10 bg-white/10"
+            }`}
+          >
+            <div className="mb-8 flex items-center justify-between">
+              <h3 className="text-2xl font-semibold text-white">{plan.name}</h3>
+              {plan.featured && (
+                <span className="rounded-full bg-cyan-300 px-3 py-1 text-xs font-semibold text-ink-950">
+                  Popular
+                </span>
+              )}
+            </div>
+            <div className="flex items-end gap-2">
+              <span className="text-5xl font-semibold text-white">{plan.price}</span>
+              <span className="pb-2 text-slate-400">{plan.detail}</span>
+            </div>
+            <button
+              className={plan.featured ? "primary-button mt-8 w-full justify-center" : "secondary-button mt-8 w-full justify-center"}
+              onClick={() => (plan.name === "Enterprise" ? scrollTo("#contact") : openSignin())}
+            >
+              {plan.cta}
+            </button>
+            <div className="mt-8 space-y-3">
+              {plan.features.map((feature) => (
+                <div key={feature} className="flex items-center gap-3 text-sm text-slate-300">
+                  <Check className="text-cyan-300" size={16} />
+                  {feature}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Contact() {
+  return (
+    <section id="contact" className="section-pad scroll-mt-24 pb-24">
+      <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+        <SectionIntro
+          eyebrow="Contact"
+          title="Talk to Paysys."
+          text="For pricing, rollout planning, or voice AI integration details, contact the Paysys team directly."
+        />
+        <a
+          href="mailto:sales@paysyslabs.com"
+          className="mx-auto mt-10 inline-flex items-center justify-center gap-3 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-6 py-4 text-base font-semibold text-cyan-100 transition hover:border-cyan-300/60 hover:bg-cyan-300/15"
+        >
+          <Mail size={20} />
+          sales@paysyslabs.com
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function ResourcePage({
+  page,
+  openPage,
+  openSignin,
+}: {
+  page: "docs" | "about" | "blog";
+  openPage: (page: MarketingPage) => void;
+  openSignin: () => void;
+}) {
+  const content = {
+    docs: {
+      eyebrow: "Docs",
+      title: "Build text-to-voice into your product.",
+      text: "Implementation notes for connecting Paysys models, generation requests, audio output, and future usage tracking.",
+      cards: [
+        ["Quick start", "Send text, choose a model, and receive generated audio."],
+        ["Models", "Use Emotion Model for expressive reads or No Emotion Model for neutral narration."],
+        ["Audio output", "Prepare the frontend for mp3, wav, streaming, and download responses."],
+      ],
+    },
+    about: {
+      eyebrow: "About",
+      title: "Paysys voice-over models for business audio.",
+      text: "Paysys is designed as a focused text-to-voice workspace for teams that need clean, realistic, and controllable voice generation.",
+      cards: [
+        ["Focused scope", "No agents or call automation, only professional text-to-voice workflows."],
+        ["Business ready", "Built for IVR prompts, banking flows, product demos, and narration."],
+        ["Model choice", "Two simple model families keep the experience easy to understand."],
+      ],
+    },
+    blog: {
+      eyebrow: "Blog",
+      title: "Voice AI updates and product notes.",
+      text: "A simple content hub for future announcements, model updates, and implementation guides.",
+      cards: [
+        ["Designing neutral IVR voices", "How consistent tone improves customer understanding."],
+        ["When to use emotional narration", "Practical examples for demos, explainers, and marketing reads."],
+        ["Preparing for API integration", "What frontend states matter before real voice APIs arrive."],
+      ],
+    },
+  }[page];
+
+  return (
+    <main className="relative z-10 min-h-screen pt-32">
+      <section className="section-pad">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <button
+            className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 hover:text-cyan-100"
+            onClick={() => openPage("home")}
+          >
+            <ArrowRight className="rotate-180" size={16} />
+            Back to home
+          </button>
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200">
+                {content.eyebrow}
+              </p>
+              <h1 className="mt-4 text-balance text-5xl font-semibold leading-tight text-white sm:text-6xl">
+                {content.title}
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+                {content.text}
+              </p>
+              <button className="primary-button mt-8" onClick={openSignin}>
+                Get Started
+                <ArrowRight size={18} />
+              </button>
+            </div>
+            <div className="soft-card p-6">
+              <p className="text-sm text-slate-400">Paysys resource center</p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                {(["docs", "about", "blog"] as const).map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => openPage(item)}
+                    className={`rounded-2xl border px-4 py-4 text-left transition ${
+                      page === item
+                        ? "border-cyan-300/40 bg-cyan-300/10 text-white"
+                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="block font-semibold capitalize">{item}</span>
+                    <span className="mt-1 block text-sm text-slate-400">
+                      {item === "docs"
+                        ? "API and integration notes"
+                        : item === "about"
+                          ? "Product direction"
+                          : "Updates and guides"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-14 grid gap-5 md:grid-cols-3">
+            {content.cards.map(([title, text]) => (
+              <article key={title} className="soft-card p-6">
+                <h2 className="text-2xl font-semibold text-white">{title}</h2>
+                <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function Field({
+  label,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  placeholder: string;
+  type?: string;
+}) {
+  return (
+    <label className="mt-4 block">
+      <span className="mb-2 block text-sm font-medium text-slate-300">{label}</span>
+      <input className="input-field" type={type} placeholder={placeholder} />
+    </label>
+  );
+}
+
+function Footer({
+  scrollTo,
+  openSignin,
+  openPage,
+}: {
+  scrollTo: (id: string) => void;
+  openSignin: () => void;
+  openPage: (page: MarketingPage) => void;
+}) {
+  return (
+    <footer className="relative z-10 border-t border-white/10 bg-ink-950/80 py-12">
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 md:grid-cols-4 lg:px-8">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200">
+              <Radio size={20} />
+            </span>
+            <span className="text-xl font-semibold tracking-[0.18em] text-white">
+              Paysys
+            </span>
+          </div>
+          <p className="mt-4 text-sm leading-6 text-slate-400">
+            Voice AI and voice-over models for modern business experiences.
+          </p>
+        </div>
+        <FooterColumn title="Models" links={["Emotion Model", "No Emotion Model"]} onClick={() => scrollTo("#models")} />
+        <FooterColumn
+          title="Resources"
+          links={["Docs", "About", "Blog"]}
+          onItemClick={(link) => openPage(link.toLowerCase() as MarketingPage)}
+        />
+        <div>
+          <h3 className="font-semibold text-white">Company</h3>
+          <button className="footer-link" onClick={() => scrollTo("#contact")}>Contact</button>
+          <button className="footer-link" onClick={() => scrollTo("#pricing")}>Pricing</button>
+          <button className="footer-link" onClick={openSignin}>Sign In</button>
+        </div>
+      </div>
+      <div className="mx-auto mt-10 max-w-7xl px-4 text-sm text-slate-500 sm:px-6 lg:px-8">
+        Copyright 2026 Paysys. All rights reserved.
+      </div>
+    </footer>
+  );
+}
+
+function FooterColumn({
+  title,
+  links,
+  onClick,
+  onItemClick,
+}: {
+  title: string;
+  links: string[];
+  onClick?: () => void;
+  onItemClick?: (link: string) => void;
+}) {
+  return (
+    <div>
+      <h3 className="font-semibold text-white">{title}</h3>
+      {links.map((link) => (
+        <button key={link} className="footer-link" onClick={() => (onItemClick ? onItemClick(link) : onClick?.())}>
+          {link}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Dashboard({ onLogout }: { onLogout: () => void }) {
+  const [activeTab, setActiveTab] = useState<DashboardTab>(() => getDashboardTabFromHash());
+  const [activeModel, setActiveModel] = useState("Emotion Model");
+  const [emotionType, setEmotionType] = useState("");
+  const [voiceScript, setVoiceScript] = useState(
+    "Welcome to Paysys. Your secure banking voice flow is ready for real-time playback."
+  );
+  const [voiceCloneEnabled, setVoiceCloneEnabled] = useState(false);
+  const [cloneVoiceName, setCloneVoiceName] = useState("Relationship Manager");
+  const [sampleVoiceFileName, setSampleVoiceFileName] = useState("");
+  const [sampleVoiceBase64, setSampleVoiceBase64] = useState("");
+  const [cloneConsent, setCloneConsent] = useState(false);
+  const [savedClonedVoices, setSavedClonedVoices] = useState<ClonedVoice[]>(() =>
+    loadSavedClonedVoices()
+  );
+  const [generatedVoices, setGeneratedVoices] = useState<GeneratedVoice[]>(() =>
+    loadGeneratedVoices()
+  );
+  const [selectedCloneId, setSelectedCloneId] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [hasResult, setHasResult] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioUrl, setAudioUrl] = useState("");
+  const [generationError, setGenerationError] = useState("");
+  const [emotionTypes, setEmotionTypes] = useState<string[]>([]);
+  const [isLoadingEmotions, setIsLoadingEmotions] = useState(false);
+  const [emotionListError, setEmotionListError] = useState("");
+  const demoJobs: GeneratedVoice[] = [
+    {
+      id: "demo-bank-ivr",
+      title: "Bank IVR greeting",
+      model: "Emotion Model",
+      voice: "Default",
+      duration: "18 sec",
+      status: "Ready",
+      createdAt: "Demo",
+    },
+    {
+      id: "demo-loan-update",
+      title: "Loan approval update",
+      model: "No Emotion Model",
+      voice: "Default",
+      duration: "31 sec",
+      status: "Ready",
+      createdAt: "Demo",
+    },
+    {
+      id: "demo-product-intro",
+      title: "Product demo intro",
+      model: "Emotion Model",
+      voice: "Default",
+      duration: "46 sec",
+      status: "Processing",
+      createdAt: "Demo",
+    },
+  ];
+  const visibleJobs = generatedVoices.length > 0 ? generatedVoices : demoJobs;
+
+  useEffect(() => {
+    const handlePopState = () => setActiveTab(getDashboardTabFromHash());
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const openTab = (tab: DashboardTab) => {
+    setActiveTab(tab);
+    window.history.pushState(null, "", `#dashboard/${tab}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const loadEmotions = async () => {
+    setIsLoadingEmotions(true);
+    setEmotionListError("");
+
+    try {
+      const nextEmotions = await fetchEmotionTypes();
+      setEmotionTypes(nextEmotions);
+      setEmotionType(nextEmotions[0]);
+    } catch (error) {
+      setEmotionListError(error instanceof Error ? error.message : "Unable to load emotions");
+    } finally {
+      setIsLoadingEmotions(false);
+    }
+  };
+
+  const saveGenerationRecord = (audio?: string) => {
+    const selectedVoice = savedClonedVoices.find((voice) => voice.id === selectedCloneId);
+    const generatedVoice: GeneratedVoice = {
+      id: `generation-${Date.now()}`,
+      title: voiceScript.trim().slice(0, 42) || "Untitled voice generation",
+      model: activeModel,
+      voice: voiceCloneEnabled ? selectedVoice?.name || cloneVoiceName || "Cloned voice" : "Default",
+      duration: `${Math.max(6, Math.ceil(voiceScript.trim().length / 8))} sec`,
+      status: "Ready",
+      createdAt: new Date().toLocaleDateString(),
+    };
+    const nextGenerations = [generatedVoice, ...generatedVoices];
+    setGeneratedVoices(nextGenerations);
+    saveGeneratedVoices(nextGenerations);
+    if (audio) setAudioUrl(audio);
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setHasResult(false);
+    setIsPlaying(false);
+    setGenerationError("");
+
+    try {
+      if (!voiceApiToken) {
+        throw new Error("Missing VITE_VOICE_API_TOKEN in .env");
+      }
+
+      const selectedVoice = savedClonedVoices.find((voice) => voice.id === selectedCloneId);
+      const selectedVoiceReferenceId =
+        selectedVoice?.id.startsWith("voice_") ? selectedVoice.id : defaultVoiceReferenceId;
+      const isEmotionModel = activeModel === "Emotion Model";
+      if (isEmotionModel && !emotionType) {
+        throw new Error("Load and select an emotion first");
+      }
+      const endpoint = isEmotionModel
+        ? "/generate-audio-emotion"
+        : "/generate-audio-no-emotion";
+      const payload = {
+        text: voiceScript,
+        language: "ur",
+        voice_reference_id: voiceCloneEnabled
+          ? selectedVoiceReferenceId
+          : defaultVoiceReferenceId,
+        ...(isEmotionModel ? { emotion: emotionType } : {}),
+      };
+
+      const response = await fetch(`${voiceApiBaseUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          Authorization: `Bearer ${voiceApiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Audio API failed with ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("audio/")) {
+        const blob = await response.blob();
+        saveGenerationRecord(URL.createObjectURL(blob));
+      } else {
+        const data = (await response.json()) as AudioGenerationResponse;
+        const responseAudioUrl = resolveAudioUrl(data);
+        const base64Audio = resolveBase64Audio(data);
+        saveGenerationRecord(
+          responseAudioUrl || (base64Audio ? `data:audio/wav;base64,${base64Audio}` : "")
+        );
+      }
+      setIsGenerating(false);
+      setHasResult(true);
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : "Audio generation failed");
+      setIsGenerating(false);
+      setHasResult(false);
+    }
+  };
+
+  const handleSaveClonedVoice = () => {
+    if (!cloneVoiceName.trim() || !sampleVoiceFileName || !sampleVoiceBase64 || !cloneConsent) return;
+
+    const clonedVoice: ClonedVoice = {
+      id: `voice-${Date.now()}`,
+      name: cloneVoiceName.trim(),
+      sampleFileName: sampleVoiceFileName,
+      audioBase64: sampleVoiceBase64,
+      createdAt: new Date().toLocaleDateString(),
+    };
+    const nextVoices = [clonedVoice, ...savedClonedVoices];
+    setSavedClonedVoices(nextVoices);
+    setSelectedCloneId(clonedVoice.id);
+    saveClonedVoices(nextVoices);
+  };
+
+  const handleSelectClonedVoice = (voiceId: string) => {
+    setSelectedCloneId(voiceId);
+    const voice = savedClonedVoices.find((item) => item.id === voiceId);
+    if (!voice) return;
+    setVoiceCloneEnabled(true);
+    setCloneVoiceName(voice.name);
+    setSampleVoiceFileName(voice.sampleFileName);
+    setSampleVoiceBase64(voice.audioBase64);
+    setCloneConsent(true);
+  };
+
+  const handleSampleVoiceUpload = async (file: File | undefined) => {
+    if (!file) return;
+    const uploadedVoice = await fileToUploadedVoice(file);
+    setSampleVoiceFileName(uploadedVoice.filename);
+    setSampleVoiceBase64(uploadedVoice.audio_base64);
+  };
+
+  return (
+    <div className="min-h-screen bg-ink-950 text-slate-100">
+      <div className="pointer-events-none fixed inset-0 bg-radial-field opacity-70" />
+      <div className="relative z-10 flex min-h-screen">
+        <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-ink-900/75 p-5 backdrop-blur-2xl lg:block">
+          <button
+            className="flex items-center gap-3 px-2"
+            onClick={onLogout}
+            aria-label="Go to Paysys landing page"
+          >
+            <span className="grid h-10 w-10 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200">
+              <Radio size={20} />
+            </span>
+            <span className="text-xl font-semibold tracking-[0.18em] text-white">
+              Paysys
+            </span>
+          </button>
+
+          <div className="mt-8 space-y-2">
+            <DashboardNavItem icon={<Home size={18} />} label="Overview" active={activeTab === "overview"} onClick={() => openTab("overview")} />
+            <DashboardNavItem icon={<Mic2 size={18} />} label="Text to Voice" active={activeTab === "voice"} onClick={() => openTab("voice")} />
+            <DashboardNavItem icon={<Layers3 size={18} />} label="Models" active={activeTab === "models"} onClick={() => openTab("models")} />
+            <DashboardNavItem icon={<Clock3 size={18} />} label="History" active={activeTab === "history"} onClick={() => openTab("history")} />
+            <DashboardNavItem icon={<Settings size={18} />} label="Settings" active={activeTab === "settings"} onClick={() => openTab("settings")} />
+          </div>
+
+          <div className="mt-8 rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+            <p className="text-sm font-semibold text-white">Business plan</p>
+            <p className="mt-2 text-sm leading-6 text-cyan-50">
+              72% monthly voice credits used. Upgrade anytime for higher volume.
+            </p>
+            <div className="mt-4 h-2 rounded-full bg-white/10">
+              <div className="h-full w-[72%] rounded-full bg-cyan-300" />
+            </div>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-20 border-b border-white/10 bg-ink-950/80 px-4 py-4 backdrop-blur-2xl sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <button
+                  className="flex items-center gap-3 lg:hidden"
+                  onClick={onLogout}
+                  aria-label="Go to Paysys landing page"
+                >
+                  <span className="grid h-10 w-10 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200">
+                    <Radio size={20} />
+                  </span>
+                  <span className="text-lg font-semibold tracking-[0.18em] text-white">
+                    Paysys
+                  </span>
+                </button>
+                <p className="mt-3 text-sm text-cyan-200 lg:mt-0">Text-to-Voice Console</p>
+                <h1 className="mt-1 text-2xl font-semibold text-white sm:text-3xl">
+                  Generate voice-overs from text
+                </h1>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-3 text-sm text-slate-400 sm:w-72">
+                  <Search size={16} />
+                  <span>Search voices, jobs, docs</span>
+                </div>
+                <button className="secondary-button px-5 py-3" onClick={onLogout}>
+                  <LogOut size={17} />
+                  Logout
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main className="space-y-6 p-4 sm:p-6 lg:p-8">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 lg:hidden">
+              <MobileDashButton icon={<Home size={17} />} label="Home" active={activeTab === "overview"} onClick={() => openTab("overview")} />
+              <MobileDashButton icon={<Mic2 size={17} />} label="Voice" active={activeTab === "voice"} onClick={() => openTab("voice")} />
+              <MobileDashButton icon={<Layers3 size={17} />} label="Models" active={activeTab === "models"} onClick={() => openTab("models")} />
+              <MobileDashButton icon={<Clock3 size={17} />} label="History" active={activeTab === "history"} onClick={() => openTab("history")} />
+              <MobileDashButton icon={<Settings size={17} />} label="Settings" active={activeTab === "settings"} onClick={() => openTab("settings")} />
+            </div>
+
+            {activeTab === "overview" && (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <DashboardMetric title="Saved voices" value={String(savedClonedVoices.length)} detail="Stored in this browser" icon={<Users />} />
+                <DashboardMetric title="Generated voices" value={String(generatedVoices.length)} detail="Stored in this browser" icon={<Clock3 />} />
+                <DashboardMetric title="Active models" value="2" detail="Emotion and neutral" icon={<Layers3 />} />
+              </div>
+            )}
+
+            {(activeTab === "overview" || activeTab === "voice") && (
+              <div className="grid gap-6">
+                <section className="dashboard-panel p-5 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-cyan-200">Playground</p>
+                    <h2 className="mt-1 text-2xl font-semibold text-white">
+                      Text to voice
+                    </h2>
+                  </div>
+                  <div className="flex rounded-full border border-white/10 bg-ink-950/70 p-1">
+                    {["Emotion Model", "No Emotion Model"].map((model) => (
+                      <button
+                        key={model}
+                        onClick={() => setActiveModel(model)}
+                        className={`rounded-full px-4 py-2 text-sm transition ${
+                          activeModel === model
+                            ? "bg-cyan-300 text-ink-950"
+                            : "text-slate-300 hover:bg-white/10"
+                        }`}
+                      >
+                        {model}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+                  <div className="rounded-3xl border border-white/10 bg-ink-950/70 p-4">
+                    <label className="text-sm font-medium text-slate-300">
+                      Voice script
+                    </label>
+                    <textarea
+                      className="mt-3 min-h-56 w-full resize-none rounded-2xl border border-white/10 bg-white/10 p-4 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-cyan-300/70 focus:ring-4 focus:ring-cyan-300/10"
+                      value={voiceScript}
+                      onChange={(event) => setVoiceScript(event.target.value)}
+                    />
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <button className="primary-button flex-1" onClick={handleGenerate}>
+                        {isGenerating ? <Activity size={18} /> : <Play size={18} fill="currentColor" />}
+                        {isGenerating ? "Generating..." : "Generate voice"}
+                      </button>
+                      <button className="secondary-button flex-1">
+                        <Upload size={18} />
+                        Import text
+                      </button>
+                    </div>
+                    <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-4">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-white">Voice cloning</p>
+                          <p className="mt-1 text-sm leading-6 text-slate-400">
+                            Add a consented reference voice and generate this script in that voice.
+                          </p>
+                        </div>
+                        <button
+                          className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition ${
+                            voiceCloneEnabled
+                              ? "bg-cyan-300 text-ink-950"
+                              : "bg-white/10 text-slate-300 hover:bg-white/20"
+                          }`}
+                          onClick={() => setVoiceCloneEnabled(!voiceCloneEnabled)}
+                          type="button"
+                        >
+                          {voiceCloneEnabled ? "Enabled" : "Enable"}
+                        </button>
+                      </div>
+                      {voiceCloneEnabled && (
+                        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+                          <label>
+                            <span className="mb-2 block text-sm font-medium text-slate-300">
+                              Clone voice name
+                            </span>
+                            <input
+                              className="input-field"
+                              value={cloneVoiceName}
+                              onChange={(event) => setCloneVoiceName(event.target.value)}
+                              placeholder="Enter voice name"
+                            />
+                          </label>
+                          <label className="flex cursor-pointer items-center justify-center gap-3 rounded-2xl border border-dashed border-cyan-300/30 bg-cyan-300/10 px-4 py-4 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/15">
+                            <Upload size={18} />
+                            {sampleVoiceFileName || "Upload sample audio"}
+                            <input
+                              className="sr-only"
+                              type="file"
+                              accept="audio/*"
+                              onChange={(event) => handleSampleVoiceUpload(event.target.files?.[0])}
+                            />
+                          </label>
+                          <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-ink-950/70 p-4 lg:col-span-2">
+                            <input
+                              className="mt-1 h-4 w-4 accent-cyan-300"
+                              type="checkbox"
+                              checked={cloneConsent}
+                              onChange={(event) => setCloneConsent(event.target.checked)}
+                            />
+                            <span className="text-sm leading-6 text-slate-300">
+                              I have permission to clone and use this reference voice.
+                            </span>
+                          </label>
+                          <button
+                            className="primary-button lg:col-span-2"
+                            type="button"
+                            onClick={handleSaveClonedVoice}
+                            disabled={!cloneVoiceName.trim() || !sampleVoiceFileName || !sampleVoiceBase64 || !cloneConsent}
+                          >
+                            <Check size={18} />
+                            Save cloned voice
+                          </button>
+                          {savedClonedVoices.length > 0 && (
+                            <div className="rounded-2xl border border-white/10 bg-ink-950/70 p-4 lg:col-span-2">
+                              <p className="text-sm font-medium text-white">Saved voices</p>
+                              <div className="mt-3 grid gap-2">
+                                {savedClonedVoices.map((voice) => (
+                                  <button
+                                    key={voice.id}
+                                    className={`rounded-2xl border px-4 py-3 text-left transition ${
+                                      selectedCloneId === voice.id
+                                        ? "border-cyan-300/50 bg-cyan-300/10 text-white"
+                                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                                    }`}
+                                    type="button"
+                                    onClick={() => handleSelectClonedVoice(voice.id)}
+                                  >
+                                    <span className="block text-sm font-semibold">{voice.name}</span>
+                                    <span className="mt-1 block text-xs text-slate-400">
+                                      {voice.sampleFileName} - saved {voice.createdAt}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/10 bg-white/10 p-4">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-slate-400">Selected model</p>
+                        <h3 className="mt-1 text-xl font-semibold text-white">
+                          {activeModel}
+                        </h3>
+                      </div>
+                      <SlidersHorizontal className="text-cyan-200" />
+                    </div>
+                    {activeModel === "Emotion Model" ? (
+                      <div className="mb-5 rounded-3xl border border-cyan-300/15 bg-cyan-300/10 p-4">
+                        <p className="text-sm font-medium text-white">Emotion type</p>
+                        <button
+                          className="mt-3 rounded-full border border-cyan-300/30 bg-ink-950/70 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-white/10 disabled:opacity-60"
+                          onClick={loadEmotions}
+                          disabled={isLoadingEmotions}
+                          type="button"
+                        >
+                          {isLoadingEmotions ? "Loading emotions..." : "Load emotions"}
+                        </button>
+                        {emotionListError && (
+                          <p className="mt-2 text-xs leading-5 text-red-200">{emotionListError}</p>
+                        )}
+                        {emotionTypes.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {emotionTypes.map((type) => (
+                              <button
+                                key={type}
+                                onClick={() => setEmotionType(type)}
+                                className={`rounded-full px-3 py-2 text-xs font-semibold transition ${
+                                  emotionType === type
+                                    ? "bg-cyan-300 text-ink-950"
+                                    : "bg-white/10 text-slate-300 hover:bg-white/20"
+                                }`}
+                              >
+                                {type}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mb-5 rounded-3xl border border-white/10 bg-ink-950/70 p-4">
+                        <p className="text-sm font-medium text-white">Neutral delivery</p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          Emotion controls are disabled for clean IVR, robotic,
+                          announcement, and standard narration output.
+                        </p>
+                      </div>
+                    )}
+                    <WavePreview muted={!hasResult} />
+                    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                      <MiniMetric label="Tone" value={activeModel === "Emotion Model" ? emotionType || "Select" : "Neutral"} />
+                      <MiniMetric label="Voice" value={voiceCloneEnabled ? cloneVoiceName || "Clone" : "Default"} />
+                      <MiniMetric label="Speed" value="1.0x" />
+                    </div>
+                    <AudioResult
+                      hasResult={hasResult}
+                      isGenerating={isGenerating}
+                      isPlaying={isPlaying}
+                      setIsPlaying={setIsPlaying}
+                      audioUrl={audioUrl}
+                      error={generationError}
+                    />
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                      <button className="secondary-button flex-1">
+                        <Copy size={18} />
+                        Copy text
+                      </button>
+                      <button className="secondary-button flex-1">
+                        <Download size={18} />
+                        Download
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                </section>
+              </div>
+            )}
+
+            {(activeTab === "overview" || activeTab === "models") && (
+              <DashboardModelsPage />
+            )}
+
+            {(activeTab === "overview" || activeTab === "history") && (
+              <div className="grid gap-6">
+                <section className="dashboard-panel p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-cyan-200">Recent jobs</p>
+                    <h2 className="mt-1 text-2xl font-semibold text-white">
+                      Generation history
+                    </h2>
+                  </div>
+                  <Clock3 className="text-cyan-200" />
+                </div>
+                <div className="mt-5 overflow-hidden rounded-3xl border border-white/10">
+                  {visibleJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      className="grid gap-2 border-b border-white/10 bg-white/5 p-4 text-sm last:border-b-0 sm:grid-cols-[1fr_0.8fr_0.8fr_0.5fr_0.6fr]"
+                    >
+                      <span className="font-medium text-white">{job.title}</span>
+                      <span className="text-slate-400">{job.model}</span>
+                      <span className="text-slate-400">{job.voice}</span>
+                      <span className="text-slate-400">{job.duration}</span>
+                      <span className={job.status === "Ready" ? "text-cyan-200" : "text-violet-200"}>
+                        {job.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                </section>
+              </div>
+            )}
+
+            {activeTab === "settings" && <DashboardSettingsPage onLogout={onLogout} />}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardNavItem({
+  icon,
+  label,
+  active = false,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+        active
+          ? "bg-cyan-300 text-ink-950"
+          : "text-slate-300 hover:bg-white/10 hover:text-white"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function MobileDashButton({
+  icon,
+  label,
+  active = false,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border text-xs font-medium transition ${
+        active
+          ? "border-cyan-300/40 bg-cyan-300 text-ink-950"
+          : "border-white/10 bg-white/10 text-slate-300"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function DashboardMetric({
+  title,
+  value,
+  detail,
+  icon,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="dashboard-panel p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-slate-400">{title}</p>
+        <span className="text-cyan-200">{icon}</span>
+      </div>
+      <p className="mt-5 text-3xl font-semibold text-white">{value}</p>
+      <p className="mt-2 text-sm text-slate-400">{detail}</p>
+    </div>
+  );
+}
+
+function DashboardModelsPage() {
+  return (
+    <section className="dashboard-panel p-5 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-cyan-200">Model catalog</p>
+          <h2 className="mt-1 text-2xl font-semibold text-white">Available voice models</h2>
+        </div>
+        <span className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-slate-300">
+          2 active models
+        </span>
+      </div>
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        <ModelDetailCard
+          title="Emotion Model"
+          description="Expressive voice-over output with selectable emotional delivery."
+          tags={["Backend emotion list", "Selectable delivery", "Urdu generation", "Voice reference"]}
+        />
+        <ModelDetailCard
+          title="No Emotion Model"
+          description="Clean neutral voice output for IVR, announcements, robotic reads, and standard narration."
+          tags={["Neutral", "IVR", "Announcement", "Narration", "Robotic"]}
+        />
+      </div>
+    </section>
+  );
+}
+
+function ModelDetailCard({
+  title,
+  description,
+  tags,
+}: {
+  title: string;
+  description: string;
+  tags: string[];
+}) {
+  return (
+    <article className="rounded-3xl border border-white/10 bg-ink-950/70 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-300/10 text-cyan-200">
+          <Mic2 size={20} />
+        </div>
+        <span className="rounded-full bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-200">
+          Ready
+        </span>
+      </div>
+      <h3 className="mt-5 text-2xl font-semibold text-white">{title}</h3>
+      <p className="mt-3 text-sm leading-6 text-slate-400">{description}</p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <span key={tag} className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs text-slate-300">
+            {tag}
+          </span>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function DashboardUsagePage() {
+  return (
+    <section className="dashboard-panel p-5 sm:p-6">
+      <p className="text-sm text-cyan-200">Usage</p>
+      <h2 className="mt-1 text-2xl font-semibold text-white">Monthly voice usage</h2>
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.8fr]">
+        <div className="rounded-3xl border border-white/10 bg-ink-950/70 p-5">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-300">Characters used</span>
+            <span className="font-semibold text-white">1.28M / 2M</span>
+          </div>
+          <div className="mt-3 h-3 rounded-full bg-white/10">
+            <div className="h-full w-[64%] rounded-full bg-gradient-to-r from-cyan-300 to-violet-300" />
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <MiniMetric label="Remaining" value="720K" />
+            <MiniMetric label="Generations" value="148" />
+            <MiniMetric label="Plan" value="Business" />
+          </div>
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+          <h3 className="text-xl font-semibold text-white">Billing notes</h3>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            This is frontend sample data. After APIs, usage will update after
+            every successful voice generation.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DashboardSettingsPage({ onLogout }: { onLogout: () => void }) {
+  return (
+    <section className="dashboard-panel p-5 sm:p-6">
+      <p className="text-sm text-cyan-200">Settings</p>
+      <h2 className="mt-1 text-2xl font-semibold text-white">Account preferences</h2>
+      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        <div className="rounded-3xl border border-white/10 bg-ink-950/70 p-5">
+          <h3 className="text-xl font-semibold text-white">Profile</h3>
+          <Field label="Name" placeholder="Paysys User" />
+          <Field label="Email" placeholder="user@company.com" type="email" />
+          <button className="secondary-button mt-5 w-full">Save changes</button>
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+          <h3 className="text-xl font-semibold text-white">Security</h3>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Password, Google login, and session controls will become active
+            when authentication APIs are connected.
+          </p>
+          <button className="secondary-button mt-5 w-full" onClick={onLogout}>
+            <LogOut size={18} />
+            Logout
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WavePreview({ muted = false }: { muted?: boolean }) {
+  const bars = [42, 70, 36, 88, 58, 96, 44, 76, 62, 90, 50, 82, 38, 68, 54, 92];
+
+  return (
+    <div className="flex h-48 items-center gap-2 rounded-3xl border border-cyan-300/15 bg-ink-950/70 p-5">
+      {bars.map((height, index) => (
+        <span
+          key={index}
+          className={`w-full rounded-full bg-gradient-to-t from-cyan-300 to-violet-300 transition ${
+            muted ? "opacity-25" : "opacity-100"
+          }`}
+          style={{ height: `${height}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AudioResult({
+  hasResult,
+  isGenerating,
+  isPlaying,
+  setIsPlaying,
+  audioUrl,
+  error,
+}: {
+  hasResult: boolean;
+  isGenerating: boolean;
+  isPlaying: boolean;
+  setIsPlaying: (playing: boolean) => void;
+  audioUrl: string;
+  error: string;
+}) {
+  return (
+    <div className="mt-5 rounded-3xl border border-white/10 bg-ink-950/70 p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-white">
+            {isGenerating
+              ? "Generating preview..."
+              : error
+                ? "Audio generation failed"
+              : hasResult
+                ? "Generated voice preview"
+                : "No audio generated yet"}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {hasResult ? "paysys-preview.wav · 18 sec" : "Generate a voice-over to preview audio here."}
+          </p>
+        </div>
+        <button
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cyan-300 text-ink-950 transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!hasResult || isGenerating}
+          onClick={() => setIsPlaying(!isPlaying)}
+          aria-label={isPlaying ? "Pause preview" : "Play preview"}
+        >
+          {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+        </button>
+      </div>
+      {audioUrl && (
+        <audio className="mt-4 w-full" controls src={audioUrl}>
+          <track kind="captions" />
+        </audio>
+      )}
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+        <div
+          className={`h-full rounded-full bg-gradient-to-r from-cyan-300 to-violet-300 transition-all duration-500 ${
+            isGenerating ? "w-2/3" : hasResult ? "w-1/3" : "w-0"
+          }`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SignInModal({
+  onClose,
+  onSignin,
+}: {
+  onClose: () => void;
+  onSignin: () => void;
+}) {
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [googleError, setGoogleError] = useState("");
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const isSignup = mode === "signup";
+
+  const handleGoogleSignin = () => {
+    setGoogleError("");
+
+    if (!googleClientId || googleClientId.includes("replace_with")) {
+      setGoogleError("Missing VITE_GOOGLE_CLIENT_ID in .env");
+      return;
+    }
+
+    if (!window.google?.accounts?.id) {
+      setGoogleError("Google sign-in script is still loading. Try again.");
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: async (response) => {
+        try {
+          if (!response.credential) {
+            throw new Error("Google did not return a credential");
+          }
+          await authenticateWithGoogleCredential(response.credential);
+          onSignin();
+        } catch (error) {
+          setGoogleError(error instanceof Error ? error.message : "Google sign-in failed");
+        } finally {
+          setIsGoogleLoading(false);
+        }
+      },
+    });
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed()) {
+        setGoogleError(`Google sign-in was not displayed: ${notification.getNotDisplayedReason()}`);
+        setIsGoogleLoading(false);
+      }
+      if (notification.isSkippedMoment()) {
+        setGoogleError(`Google sign-in was skipped: ${notification.getSkippedReason()}`);
+        setIsGoogleLoading(false);
+      }
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-black/70 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-ink-900 p-6 shadow-panel">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-cyan-200">Paysys Console</p>
+            <h2 className="mt-1 text-2xl font-semibold text-white">
+              {isSignup ? "Create account" : "Sign in"}
+            </h2>
+          </div>
+          <button
+            className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white"
+            onClick={onClose}
+            aria-label="Close sign in modal"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 rounded-full border border-white/10 bg-ink-950/70 p-1">
+          <button
+            className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+              !isSignup ? "bg-cyan-300 text-ink-950" : "text-slate-300 hover:bg-white/10"
+            }`}
+            onClick={() => setMode("signin")}
+          >
+            Sign in
+          </button>
+          <button
+            className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+              isSignup ? "bg-cyan-300 text-ink-950" : "text-slate-300 hover:bg-white/10"
+            }`}
+            onClick={() => setMode("signup")}
+          >
+            Sign up
+          </button>
+        </div>
+        {isSignup && <Field label="Full name" placeholder="Your name" />}
+        <Field label="Email" placeholder="you@company.com" type="email" />
+        <Field label="Password" placeholder="Enter password" type="password" />
+        {isSignup && <Field label="Company" placeholder="Company name" />}
+        <button className="primary-button mt-6 w-full justify-center" onClick={onSignin}>
+          {isSignup ? "Create account" : "Continue"}
+          <ArrowRight size={18} />
+        </button>
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-white/10" />
+          <span className="text-xs uppercase tracking-[0.2em] text-slate-500">
+            or
+          </span>
+          <span className="h-px flex-1 bg-white/10" />
+        </div>
+        <button className="google-button" type="button" onClick={handleGoogleSignin} disabled={isGoogleLoading}>
+          <GoogleMark />
+          {isGoogleLoading
+            ? "Connecting Google..."
+            : isSignup
+              ? "Sign up with Google"
+              : "Continue with Google"}
+        </button>
+        {googleError && (
+          <p className="mt-3 text-center text-xs leading-5 text-red-200">{googleError}</p>
+        )}
+        <p className="mt-4 text-center text-xs leading-5 text-slate-500">
+          Google sign-in opens your dashboard after account selection. Backend verification can attach later.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-[13px] font-bold text-ink-950">
+      G
+    </span>
+  );
+}
+
+function SectionIntro({
+  eyebrow,
+  title,
+  text,
+  align = "center",
+}: {
+  eyebrow: string;
+  title: string;
+  text: string;
+  align?: "center" | "left";
+}) {
+  return (
+    <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
+      <p className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200">
+        {eyebrow}
+      </p>
+      <h2 className="mt-4 text-balance text-4xl font-semibold leading-tight text-white sm:text-5xl">
+        {title}
+      </h2>
+      <p className="mt-5 text-base leading-8 text-slate-300">{text}</p>
+    </div>
+  );
+}
+
+export default App;
