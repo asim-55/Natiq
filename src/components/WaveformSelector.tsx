@@ -134,6 +134,11 @@ export default function WaveformSelector({
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
+    
+    // In fixed duration mode, disable click-to-reposition
+    const isFixedDuration = minDuration === maxDuration;
+    if (isFixedDuration) return;
+    
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const clickTime = (x / rect.width) * audioDuration;
@@ -164,18 +169,28 @@ export default function WaveformSelector({
     const x = e.clientX - rect.left;
     const clickTime = (x / rect.width) * audioDuration;
 
-    // Check if clicking near start or end markers
-    const startX = (selectionStart / audioDuration) * rect.width;
-    const endX = (selectionEnd / audioDuration) * rect.width;
+    // Only allow region dragging when min === max (fixed duration mode)
+    const isFixedDuration = minDuration === maxDuration;
+    
+    if (isFixedDuration) {
+      // In fixed duration mode, only allow dragging the entire region
+      if (clickTime >= selectionStart && clickTime <= selectionEnd) {
+        setIsDragging("region");
+        dragStartPosRef.current = { x, selStart: selectionStart, selEnd: selectionEnd };
+      }
+    } else {
+      // In flexible duration mode, allow individual marker dragging
+      const startX = (selectionStart / audioDuration) * rect.width;
+      const endX = (selectionEnd / audioDuration) * rect.width;
 
-    if (Math.abs(x - startX) < 10) {
-      setIsDragging("start");
-    } else if (Math.abs(x - endX) < 10) {
-      setIsDragging("end");
-    } else if (clickTime >= selectionStart && clickTime <= selectionEnd) {
-      // Clicking inside the selection region - enable region dragging
-      setIsDragging("region");
-      dragStartPosRef.current = { x, selStart: selectionStart, selEnd: selectionEnd };
+      if (Math.abs(x - startX) < 10) {
+        setIsDragging("start");
+      } else if (Math.abs(x - endX) < 10) {
+        setIsDragging("end");
+      } else if (clickTime >= selectionStart && clickTime <= selectionEnd) {
+        setIsDragging("region");
+        dragStartPosRef.current = { x, selStart: selectionStart, selEnd: selectionEnd };
+      }
     }
   };
 
@@ -189,8 +204,10 @@ export default function WaveformSelector({
     if (isDragging === "none") {
       const startX = (selectionStart / audioDuration) * rect.width;
       const endX = (selectionEnd / audioDuration) * rect.width;
+      const isFixedDuration = minDuration === maxDuration;
       
-      if (Math.abs(x - startX) < 10 || Math.abs(x - endX) < 10) {
+      if (!isFixedDuration && (Math.abs(x - startX) < 10 || Math.abs(x - endX) < 10)) {
+        // Only show resize cursor in flexible duration mode
         setCursorStyle("cursor-col-resize");
       } else if (time >= selectionStart && time <= selectionEnd) {
         setCursorStyle("cursor-grab");
