@@ -330,7 +330,7 @@ export default function VoicePage() {
                   </label>
                   {isFree && isUrdu && (
                     <span className="rounded-full bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 text-xs text-amber-300">
-                      5 on Free · <a href="/dashboard/subscription" className="underline">Upgrade</a>
+                      6 on Free · <a href="/dashboard/subscription" className="underline">Upgrade</a>
                     </span>
                   )}
                 </div>

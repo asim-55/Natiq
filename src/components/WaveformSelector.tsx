@@ -5,12 +5,14 @@ interface WaveformSelectorProps {
   audioBlob: Blob;
   onSelectionComplete: (selectedBlob: Blob, startTime: number, endTime: number) => void;
   maxDuration?: number; // Maximum selection duration in seconds
+  minDuration?: number; // Minimum selection duration in seconds
 }
 
 export default function WaveformSelector({ 
   audioBlob, 
   onSelectionComplete,
-  maxDuration = 15 
+  maxDuration = 15,
+  minDuration = 15
 }: WaveformSelectorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -36,7 +38,8 @@ export default function WaveformSelector({
       const buffer = await audioContext.decodeAudioData(arrayBuffer);
       setAudioBuffer(buffer);
       setAudioDuration(buffer.duration);
-      setSelectionEnd(Math.min(maxDuration, buffer.duration));
+      // Set initial selection to minimum duration
+      setSelectionEnd(Math.min(Math.max(minDuration, maxDuration), buffer.duration));
     };
     loadAudio();
 
@@ -45,7 +48,7 @@ export default function WaveformSelector({
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       audioContextRef.current?.close();
     };
-  }, [audioBlob, maxDuration]);
+  }, [audioBlob, maxDuration, minDuration]);
 
   // Draw waveform
   useEffect(() => {
@@ -135,9 +138,22 @@ export default function WaveformSelector({
     const x = e.clientX - rect.left;
     const clickTime = (x / rect.width) * audioDuration;
 
-    // Click to set selection
+    // Click to set selection with minimum duration enforced
     const newStart = Math.max(0, clickTime);
-    const newEnd = Math.min(audioDuration, clickTime + maxDuration);
+    let newEnd = Math.min(audioDuration, clickTime + minDuration);
+    
+    // If not enough space ahead, move start back
+    if (newEnd - newStart < minDuration) {
+      newEnd = Math.min(audioDuration, newStart + minDuration);
+      if (newEnd > audioDuration) {
+        newEnd = audioDuration;
+        const adjustedStart = Math.max(0, audioDuration - minDuration);
+        setSelectionStart(adjustedStart);
+        setSelectionEnd(newEnd);
+        return;
+      }
+    }
+    
     setSelectionStart(newStart);
     setSelectionEnd(newEnd);
   };
@@ -186,13 +202,13 @@ export default function WaveformSelector({
 
     // Handle dragging
     if (isDragging === "start") {
-      const newStart = Math.max(0, Math.min(time, selectionEnd - 0.1));
-      if (selectionEnd - newStart <= maxDuration) {
+      const newStart = Math.max(0, Math.min(time, selectionEnd - minDuration));
+      if (selectionEnd - newStart <= maxDuration && selectionEnd - newStart >= minDuration) {
         setSelectionStart(newStart);
       }
     } else if (isDragging === "end") {
-      const newEnd = Math.min(audioDuration, Math.max(time, selectionStart + 0.1));
-      if (newEnd - selectionStart <= maxDuration) {
+      const newEnd = Math.min(audioDuration, Math.max(time, selectionStart + minDuration));
+      if (newEnd - selectionStart <= maxDuration && newEnd - selectionStart >= minDuration) {
         setSelectionEnd(newEnd);
       }
     } else if (isDragging === "region" && dragStartPosRef.current) {

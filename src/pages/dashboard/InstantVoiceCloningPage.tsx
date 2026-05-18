@@ -158,6 +158,12 @@ export default function InstantVoiceCloningPage() {
   }
 
   function stopRecording() {
+    // Validate minimum recording time
+    if (recordingTime < 15) {
+      setError("Recording must be at least 15 seconds long. Please continue recording.");
+      return;
+    }
+    
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
@@ -251,9 +257,25 @@ export default function InstantVoiceCloningPage() {
   const handleUpload = async (file: File) => {
     if (!token) return;
     setError("");
-    setUploadOriginalName(file.name);
-    setUploadBlob(file);
-    setUploadPhase("waveform");
+    
+    try {
+      // Validate audio duration before proceeding
+      const arrayBuffer = await file.arrayBuffer();
+      const audioContext = new AudioContext();
+      const buffer = await audioContext.decodeAudioData(arrayBuffer);
+      audioContext.close();
+      
+      if (buffer.duration < 15) {
+        setError("Uploaded audio must be at least 15 seconds long. Please upload a longer file.");
+        return;
+      }
+      
+      setUploadOriginalName(file.name);
+      setUploadBlob(file);
+      setUploadPhase("waveform");
+    } catch (err) {
+      setError("Failed to load audio file. Please ensure it's a valid audio format.");
+    }
   };
 
   async function handleUploadWaveformSelection(selectedBlob: Blob, startTime: number, endTime: number) {
@@ -391,7 +413,12 @@ export default function InstantVoiceCloningPage() {
                         <Mic size={22} />
                       </div>
                       {recPhase === "recording" ? (
-                        <span className="text-sm font-semibold tabular-nums">{fmtTime(recordingTime)} · Click to stop</span>
+                        <>
+                          <span className="text-sm font-semibold tabular-nums">{fmtTime(recordingTime)} · Click to stop</span>
+                          {recordingTime < 15 && (
+                            <span className="text-xs text-amber-300 mt-1">Minimum 15 seconds required ({15 - recordingTime}s remaining)</span>
+                          )}
+                        </>
                       ) : recPhase === "processing" ? (
                         <span className="text-sm font-semibold">Processing...</span>
                       ) : (
@@ -416,6 +443,7 @@ export default function InstantVoiceCloningPage() {
                         audioBlob={recordedBlob}
                         onSelectionComplete={handleWaveformSelection}
                         maxDuration={15}
+                        minDuration={15}
                       />
                     </div>
                   )}
@@ -522,6 +550,7 @@ export default function InstantVoiceCloningPage() {
                         audioBlob={uploadBlob}
                         onSelectionComplete={handleUploadWaveformSelection}
                         maxDuration={15}
+                        minDuration={15}
                       />
                       <p className="text-xs text-slate-500">
                         Uploaded: <span className="text-slate-300">{uploadOriginalName}</span>
