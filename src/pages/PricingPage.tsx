@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Check, Crown, Rocket, Shield, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import SignInModal from "../auth/SignInModal";
 import PricingCalculator from "../components/PricingCalculator";
 
 interface PlanCard {
   label: string;
-  price: string;
+  monthlyPrice: number | null;
+  annualPrice: number | null;
   credits: string;
   icon: React.ReactNode;
   features: string[];
@@ -13,7 +18,8 @@ interface PlanCard {
 const plans: PlanCard[] = [
   {
     label: "Free",
-    price: "$0",
+    monthlyPrice: 0,
+    annualPrice: 0,
     credits: "500 credits/mo",
     icon: <Zap size={24} />,
     features: [
@@ -26,7 +32,8 @@ const plans: PlanCard[] = [
   },
   {
     label: "Plus",
-    price: "$29",
+    monthlyPrice: 29,
+    annualPrice: 23,
     credits: "5,000 credits/mo",
     icon: <Rocket size={24} />,
     highlight: true,
@@ -41,7 +48,8 @@ const plans: PlanCard[] = [
   },
   {
     label: "Pro",
-    price: "$99",
+    monthlyPrice: 99,
+    annualPrice: 79,
     credits: "25,000 credits/mo",
     icon: <Crown size={24} />,
     features: [
@@ -56,7 +64,8 @@ const plans: PlanCard[] = [
   },
   {
     label: "Enterprise",
-    price: "Custom",
+    monthlyPrice: null,
+    annualPrice: null,
     credits: "Unlimited",
     icon: <Shield size={24} />,
     features: [
@@ -70,8 +79,23 @@ const plans: PlanCard[] = [
 ];
 
 export default function PricingPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate("/dashboard/overview");
+    } else {
+      setModalOpen(true);
+    }
+  };
+
   return (
-    <main className="relative z-10 pt-28 pb-20">
+    <>
+      <SignInModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <main className="relative z-10 pt-28 pb-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center">
@@ -84,60 +108,92 @@ export default function PricingPage() {
           </p>
         </div>
 
+        {/* Billing toggle */}
+        <div className="mt-8 flex justify-center">
+          <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+            {(["monthly", "annual"] as const).map(b => (
+              <button
+                key={b}
+                onClick={() => setBilling(b)}
+                className={`rounded-full px-6 py-2.5 text-sm font-medium capitalize transition
+                  ${billing === b ? "bg-cyan-300 text-ink-950" : "text-slate-400 hover:text-white"}`}
+              >
+                {b}
+                {b === "annual" && <span className="ml-1.5 text-xs font-semibold text-green-400">Save 20%</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Plan cards */}
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {plans.map((plan) => (
-            <div
-              key={plan.label}
-              className={`flex flex-col rounded-3xl border p-5 transition ${
-                plan.highlight
-                  ? "border-cyan-300/40 bg-cyan-300/5 shadow-lg shadow-cyan-300/10"
-                  : "border-white/10 bg-ink-950/70"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className={`grid h-10 w-10 place-items-center rounded-2xl ${
-                    plan.highlight
-                      ? "bg-cyan-300/20 text-cyan-200"
-                      : "bg-white/10 text-slate-300"
-                  }`}
-                >
-                  {plan.icon}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-white">{plan.label}</p>
-                  <p className="text-xs text-slate-400">{plan.credits}</p>
-                </div>
-              </div>
+          {plans.map((plan) => {
+            const price =
+              plan.monthlyPrice === null
+                ? null
+                : billing === "annual" && plan.annualPrice !== null
+                  ? plan.annualPrice
+                  : plan.monthlyPrice;
 
-              <p className="mt-4 text-3xl font-bold text-white">
-                {plan.price}
-                {plan.price !== "Custom" && (
-                  <span className="text-sm font-normal text-slate-400">/mo</span>
-                )}
-              </p>
-
-              <ul className="mt-5 flex-1 space-y-2">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
-                    <Check size={14} className="mt-0.5 shrink-0 text-cyan-300" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                className={`mt-5 w-full rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+            return (
+              <div
+                key={plan.label}
+                className={`flex flex-col rounded-3xl border p-5 transition ${
                   plan.highlight
-                    ? "bg-cyan-300 text-ink-950 hover:bg-cyan-200"
-                    : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                    ? "border-cyan-300/40 bg-cyan-300/5 shadow-lg shadow-cyan-300/10"
+                    : "border-white/10 bg-ink-950/70"
                 }`}
               >
-                {plan.label === "Enterprise" ? "Contact us" : "Get started"}
-              </button>
-            </div>
-          ))}
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`grid h-10 w-10 place-items-center rounded-2xl ${
+                      plan.highlight
+                        ? "bg-cyan-300/20 text-cyan-200"
+                        : "bg-white/10 text-slate-300"
+                    }`}
+                  >
+                    {plan.icon}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{plan.label}</p>
+                    <p className="text-xs text-slate-400">{plan.credits}</p>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-3xl font-bold text-white">
+                  {price === null ? "Custom" : price === 0 ? "$0" : `$${price}`}
+                  {price !== null && price > 0 && (
+                    <span className="text-sm font-normal text-slate-400">/mo</span>
+                  )}
+                </p>
+                {billing === "annual" && plan.annualPrice !== null && plan.monthlyPrice !== null && plan.monthlyPrice > 0 && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    ${(plan.annualPrice * 12).toFixed(0)} billed annually
+                  </p>
+                )}
+
+                <ul className="mt-5 flex-1 space-y-2">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
+                      <Check size={14} className="mt-0.5 shrink-0 text-cyan-300" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={handleGetStarted}
+                  className={`mt-5 w-full rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    plan.highlight
+                      ? "bg-cyan-300 text-ink-950 hover:bg-cyan-200"
+                      : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
+                  }`}
+                >
+                  {plan.label === "Enterprise" ? "Contact us" : "Get started"}
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {/* How credits work */}
@@ -181,5 +237,6 @@ export default function PricingPage() {
         </section>
       </div>
     </main>
+    </>
   );
 }

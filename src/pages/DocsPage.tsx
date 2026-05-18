@@ -21,28 +21,6 @@ interface Endpoint {
 const BASE = "https://api.natiq.ai";
 
 const endpoints: Endpoint[] = [
-  /* ---- Health ---- */
-  {
-    id: "health",
-    method: "GET",
-    path: "/health",
-    title: "Health check",
-    description: "Returns server status. No authentication required.",
-    auth: false,
-    curl: `curl -s ${BASE}/health`,
-    responseNote: '{"status":"ok"}',
-  },
-  {
-    id: "emotions",
-    method: "GET",
-    path: "/emotions",
-    title: "List supported emotions",
-    description: "Returns all 23 emotion tags supported by Natiq for expressive speech generation. No authentication required.",
-    auth: false,
-    curl: `curl -s ${BASE}/emotions`,
-    responseNote: '{"emotions":["neutral","happy","sad","angry","excited","calm","serious","romantic","dramatic","funny","fearful","surprised","confused","disappointed","hopeful","motivational","whisper","sarcastic","narrative","empathetic","formal","casual","poetic"]}',
-  },
-
   /* ---- Auth ---- */
   {
     id: "signup",
@@ -75,99 +53,6 @@ const endpoints: Endpoint[] = [
   -H "Content-Type: application/json" \\
   -d '{"email":"you@example.com","password":"yourpassword"}'`,
   },
-  {
-    id: "google",
-    method: "POST",
-    path: "/auth/google",
-    title: "Google OAuth",
-    description: "Sign in or sign up using Google ID token from OAuth flow.",
-    auth: false,
-    body: `{
-  "credential": "GOOGLE_ID_TOKEN"
-}`,
-    curl: `curl -s ${BASE}/auth/google \\
-  -H "Content-Type: application/json" \\
-  -d '{"credential":"GOOGLE_ID_TOKEN"}'`,
-  },
-  {
-    id: "forgot-password",
-    method: "POST",
-    path: "/auth/forgot-password",
-    title: "Forgot password",
-    description: "Request a password reset email. Returns success message.",
-    auth: false,
-    body: `{
-  "email": "you@example.com"
-}`,
-    curl: `curl -s ${BASE}/auth/forgot-password \\
-  -H "Content-Type: application/json" \\
-  -d '{"email":"you@example.com"}'`,
-  },
-  {
-    id: "reset-password",
-    method: "POST",
-    path: "/auth/reset-password",
-    title: "Reset password",
-    description: "Reset password using token from email.",
-    auth: false,
-    body: `{
-  "token": "RESET_TOKEN",
-  "new_password": "newpassword123"
-}`,
-    curl: `curl -s ${BASE}/auth/reset-password \\
-  -H "Content-Type: application/json" \\
-  -d '{"token":"RESET_TOKEN","new_password":"newpassword123"}'`,
-  },
-  {
-    id: "logout",
-    method: "POST",
-    path: "/auth/logout",
-    title: "Logout",
-    description: "Invalidate current session and revoke refresh token.",
-    auth: true,
-    curl: `curl -s -X POST ${BASE}/auth/logout \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "refresh",
-    method: "POST",
-    path: "/auth/refresh",
-    title: "Refresh token",
-    description: "Get new access token using refresh token from cookie.",
-    auth: false,
-    curl: `curl -s -X POST ${BASE}/auth/refresh \\
-  --cookie "refresh_token=<REFRESH_TOKEN>"`,
-  },
-  {
-    id: "sessions",
-    method: "GET",
-    path: "/auth/sessions",
-    title: "List active sessions",
-    description: "Get all active login sessions for your account.",
-    auth: true,
-    curl: `curl -s ${BASE}/auth/sessions \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "revoke-others",
-    method: "DELETE",
-    path: "/auth/sessions/revoke-others",
-    title: "Revoke other sessions",
-    description: "Logout from all devices except the current one.",
-    auth: true,
-    curl: `curl -s -X DELETE ${BASE}/auth/sessions/revoke-others \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "revoke-session",
-    method: "DELETE",
-    path: "/auth/sessions/{session_id}",
-    title: "Revoke specific session",
-    description: "Logout from a specific device/session.",
-    auth: true,
-    curl: `curl -s -X DELETE ${BASE}/auth/sessions/{session_id} \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
 
   /* ---- API Tokens ---- */
   {
@@ -195,21 +80,6 @@ const endpoints: Endpoint[] = [
     auth: true,
     curl: `curl -s ${BASE}/auth/api-tokens \\
   -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "update-token-expiry",
-    method: "PATCH",
-    path: "/auth/api-tokens/{token_id}/expiry",
-    title: "Update token expiry",
-    description: "Extend or modify the expiration date of an API token.",
-    auth: true,
-    body: `{
-  "expires_at": "2026-12-31T23:59:59Z"
-}`,
-    curl: `curl -s -X PATCH ${BASE}/auth/api-tokens/1/expiry \\
-  -H "Authorization: Bearer <TOKEN>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"expires_at":"2026-12-31T23:59:59Z"}'`,
   },
   {
     id: "delete-token",
@@ -250,27 +120,6 @@ const endpoints: Endpoint[] = [
     curl: `curl -s ${BASE}/my-voices \\
   -H "Authorization: Bearer <TOKEN>"`,
   },
-  {
-    id: "delete-voice",
-    method: "DELETE",
-    path: "/voices/{voice_id}",
-    title: "Delete voice",
-    description: "Permanently delete a voice reference from your account.",
-    auth: true,
-    curl: `curl -s -X DELETE ${BASE}/voices/{voice_id} \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "preview-voice",
-    method: "GET",
-    path: "/preview-voice/{voice_id}",
-    title: "Preview voice",
-    description: "Stream or download the original voice reference audio file.",
-    auth: true,
-    curl: `curl -s "${BASE}/preview-voice/{voice_id}" \\
-  -H "Authorization: Bearer <TOKEN>" \\
-  --output voice-preview.wav`,
-  },
 
   /* ---- Generation ---- */
   {
@@ -278,7 +127,7 @@ const endpoints: Endpoint[] = [
     method: "POST",
     path: "/generate-audio-emotion",
     title: "Generate audio with emotion",
-    description: "Generate expressive Roman Urdu speech with one of 23 emotions. Supports Urdu text (both Urdu script and Roman Urdu). Costs 6 credits per generation. Returns WAV audio file.",
+    description: "Generate expressive Roman Urdu speech with one of 23 emotions. Supports Urdu text (both Urdu script and Roman Urdu). Costs 1 credit per 20 characters. Returns WAV audio file.",
     auth: true,
     body: `{
   "text": "Aaj ka din bohat khoobsurat hai",
@@ -293,27 +142,8 @@ const endpoints: Endpoint[] = [
   --output output.wav`,
     responseNote: "Returns audio/wav file",
   },
-  {
-    id: "gen-no-emotion",
-    method: "POST",
-    path: "/generate-audio-no-emotion",
-    title: "Generate audio (neutral)",
-    description: "Generate neutral speech without emotional expression. Works with all supported languages including Urdu, English, Arabic, Hindi, and 20+ more. Costs 6 credits per generation. Returns WAV audio file.",
-    auth: true,
-    body: `{
-  "text": "Hello world, this is a test",
-  "language": "en",
-  "voice_reference_id": "<VOICE_ID>"
-}`,
-    curl: `curl -s ${BASE}/generate-audio-no-emotion \\
-  -H "Authorization: Bearer <TOKEN>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"text":"Hello world, this is a test","language":"en","voice_reference_id":"<VOICE_ID>"}' \\
-  --output output.wav`,
-    responseNote: "Returns audio/wav file",
-  },
 
-  /* ---- User / History ---- */
+  /* ---- User ---- */
   {
     id: "me",
     method: "GET",
@@ -323,137 +153,6 @@ const endpoints: Endpoint[] = [
     auth: true,
     curl: `curl -s ${BASE}/me \\
   -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "my-generations",
-    method: "GET",
-    path: "/my-generations",
-    title: "List my generations",
-    description: "Returns all audio files you have generated with metadata and playback URLs.",
-    auth: true,
-    curl: `curl -s ${BASE}/my-generations \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "play",
-    method: "GET",
-    path: "/play/{generation_id}",
-    title: "Play / download audio",
-    description: "Stream or download a previously generated audio file. Supports both Bearer header and ?token= query parameter for browser playback.",
-    auth: true,
-    curl: `curl -s "${BASE}/play/abc123xyz?token=<TOKEN>" \\
-  --output playback.wav`,
-  },
-
-  /* ---- Usage Stats ---- */
-  {
-    id: "usage-generations",
-    method: "GET",
-    path: "/usage/generations",
-    title: "Generation usage stats",
-    description: "Get statistics about your audio generation history, including total generations, credits used, and breakdown by model.",
-    auth: true,
-    curl: `curl -s ${BASE}/usage/generations \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "usage-uploads",
-    method: "GET",
-    path: "/usage/uploads",
-    title: "Upload usage stats",
-    description: "Get statistics about your voice uploads including total count and storage used.",
-    auth: true,
-    curl: `curl -s ${BASE}/usage/uploads \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-
-  /* ---- Plans ---- */
-  {
-    id: "select-plan",
-    method: "POST",
-    path: "/select-plan",
-    title: "Select subscription plan",
-    description: "Upgrade or downgrade your subscription plan (free, plus, pro).",
-    auth: true,
-    body: `{
-  "plan": "pro"
-}`,
-    curl: `curl -s ${BASE}/select-plan \\
-  -H "Authorization: Bearer <TOKEN>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"plan":"pro"}'`,
-  },
-  {
-    id: "plans",
-    method: "GET",
-    path: "/plans",
-    title: "List available plans",
-    description: "Get all available subscription plans with pricing and features.",
-    auth: false,
-    curl: `curl -s ${BASE}/plans`,
-  },
-  {
-    id: "pricing-calculator",
-    method: "GET",
-    path: "/pricing-calculator",
-    title: "Pricing calculator",
-    description: "Calculate estimated costs based on usage parameters.",
-    auth: false,
-    curl: `curl -s "${BASE}/pricing-calculator?generations=100"`,
-  },
-
-  /* ---- Organization ---- */
-  {
-    id: "create-org",
-    method: "POST",
-    path: "/org",
-    title: "Create organization",
-    description: "Create a new organization for team collaboration.",
-    auth: true,
-    body: `{
-  "name": "My Company",
-  "description": "Our team workspace"
-}`,
-    curl: `curl -s ${BASE}/org \\
-  -H "Authorization: Bearer <TOKEN>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"name":"My Company","description":"Our team workspace"}'`,
-  },
-  {
-    id: "my-org",
-    method: "GET",
-    path: "/org/me",
-    title: "Get my organizations",
-    description: "List all organizations you belong to.",
-    auth: true,
-    curl: `curl -s ${BASE}/org/me \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "org-members",
-    method: "GET",
-    path: "/org/{org_id}/members",
-    title: "List organization members",
-    description: "Get all members of an organization.",
-    auth: true,
-    curl: `curl -s ${BASE}/org/{org_id}/members \\
-  -H "Authorization: Bearer <TOKEN>"`,
-  },
-  {
-    id: "invite-member",
-    method: "POST",
-    path: "/org/{org_id}/invite",
-    title: "Invite member to organization",
-    description: "Send an email invitation to join the organization.",
-    auth: true,
-    body: `{
-  "email": "teammate@example.com",
-  "role": "member"
-}`,
-    curl: `curl -s ${BASE}/org/{org_id}/invite \\
-  -H "Authorization: Bearer <TOKEN>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"email":"teammate@example.com","role":"member"}'`,
   },
 ];
 
@@ -542,15 +241,11 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
 }
 
 const sections = [
-  { title: "Health & Info", ids: ["health", "emotions"] },
-  { title: "Authentication", ids: ["signup", "login", "google", "forgot-password", "reset-password", "logout", "refresh", "sessions", "revoke-others", "revoke-session"] },
-  { title: "API Tokens", ids: ["create-token", "list-tokens", "update-token-expiry", "delete-token"] },
-  { title: "Voice Upload", ids: ["upload-voice", "my-voices", "delete-voice", "preview-voice"] },
-  { title: "Audio Generation", ids: ["gen-emotion", "gen-no-emotion"] },
-  { title: "User & History", ids: ["me", "my-generations", "play"] },
-  { title: "Usage Stats", ids: ["usage-generations", "usage-uploads"] },
-  { title: "Plans & Billing", ids: ["select-plan", "plans", "pricing-calculator"] },
-  { title: "Organization", ids: ["create-org", "my-org", "org-members", "invite-member"] },
+  { title: "Authentication", ids: ["signup", "login"] },
+  { title: "API Tokens", ids: ["create-token", "list-tokens", "delete-token"] },
+  { title: "Voice Upload", ids: ["upload-voice", "my-voices"] },
+  { title: "Audio Generation", ids: ["gen-emotion"] },
+  { title: "User Profile", ids: ["me"] },
 ];
 
 export default function DocsPage() {
@@ -573,8 +268,8 @@ export default function DocsPage() {
             <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /auth/signup</code> — create account, receive 500 free credits</li>
             <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /auth/api-tokens</code> — create a <code className="text-cyan-200">psk_</code> token for programmatic access</li>
             <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /upload-voice</code> — upload a voice reference (10-30s audio), get <code className="text-cyan-200">voice_id</code></li>
-            <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /generate-audio-emotion</code> — generate Roman Urdu speech with emotion (6 credits)</li>
-            <li><code className="rounded bg-white/10 px-1 text-cyan-200">GET /my-generations</code> — retrieve your generated audio files</li>
+            <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /generate-audio-emotion</code> — generate Roman Urdu speech with emotion (1 credit per 20 characters)</li>
+            <li><code className="rounded bg-white/10 px-1 text-cyan-200">GET /me</code> — check your remaining credits and profile</li>
           </ol>
         </div>
 
