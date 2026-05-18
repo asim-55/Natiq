@@ -38,8 +38,14 @@ export default function WaveformSelector({
       const buffer = await audioContext.decodeAudioData(arrayBuffer);
       setAudioBuffer(buffer);
       setAudioDuration(buffer.duration);
-      // Set initial selection to minimum duration
-      setSelectionEnd(Math.min(Math.max(minDuration, maxDuration), buffer.duration));
+      
+      // Ensure selection respects min/max duration constraints
+      const isFixedDuration = minDuration === maxDuration;
+      const targetDuration = isFixedDuration ? minDuration : Math.max(minDuration, Math.min(maxDuration, buffer.duration));
+      
+      // Always start selection from the beginning
+      setSelectionStart(0);
+      setSelectionEnd(Math.min(targetDuration, buffer.duration));
     };
     loadAudio();
 
@@ -235,16 +241,19 @@ export default function WaveformSelector({
       const deltaTime = (deltaX / rect.width) * audioDuration;
       const duration = dragStartPosRef.current.selEnd - dragStartPosRef.current.selStart;
       
+      // Enforce minimum duration (in case dragStartPosRef has invalid duration)
+      const enforcedDuration = Math.max(duration, minDuration);
+      
       let newStart = dragStartPosRef.current.selStart + deltaTime;
       let newEnd = dragStartPosRef.current.selEnd + deltaTime;
       
-      // Keep within bounds
+      // Keep within bounds with enforced duration
       if (newStart < 0) {
         newStart = 0;
-        newEnd = duration;
+        newEnd = enforcedDuration;
       } else if (newEnd > audioDuration) {
         newEnd = audioDuration;
-        newStart = audioDuration - duration;
+        newStart = Math.max(0, audioDuration - enforcedDuration);
       }
       
       setSelectionStart(newStart);
@@ -266,16 +275,19 @@ export default function WaveformSelector({
 
   const moveSelection = (direction: "left" | "right") => {
     const duration = selectionEnd - selectionStart;
+    // Enforce minimum duration
+    const enforcedDuration = Math.max(duration, minDuration);
     const step = 0.5; // Move by 0.5 seconds
 
     if (direction === "left") {
       const newStart = Math.max(0, selectionStart - step);
       setSelectionStart(newStart);
-      setSelectionEnd(newStart + duration);
+      setSelectionEnd(newStart + enforcedDuration);
     } else {
       const newEnd = Math.min(audioDuration, selectionEnd + step);
-      setSelectionStart(newEnd - duration);
-      setSelectionEnd(newEnd);
+      const newStart = Math.max(0, newEnd - enforcedDuration);
+      setSelectionStart(newStart);
+      setSelectionEnd(newStart + enforcedDuration);
     }
   };
 
