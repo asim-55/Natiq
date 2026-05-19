@@ -1,11 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * OAuth callback page — opened in a popup by SignInModal.
  * Captures the authorization code from the URL and posts it back to the opener.
  */
 export default function AuthCallbackPage() {
+  const hasPosted = useRef(false);
+
   useEffect(() => {
+    // Prevent double execution in React StrictMode
+    if (hasPosted.current) return;
+    hasPosted.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 

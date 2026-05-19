@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import { googleAuth, githubAuth, microsoftAuth, signup, login, forgotPassword } from "../api/client";
 import { useAuth } from "./AuthContext";
@@ -21,6 +21,7 @@ export default function SignInModal({ open, onClose }: Props) {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const processingOAuth = useRef(false);
 
   // ---------------------------------------------------------------------------
   // Google Sign-In initialization with hidden button
@@ -78,6 +79,13 @@ export default function SignInModal({ open, onClose }: Props) {
       const { provider, code } = event.data || {};
       if (!provider || !code) return;
 
+      // Prevent duplicate processing of the same OAuth code
+      if (processingOAuth.current) {
+        console.log("Already processing OAuth callback, ignoring duplicate");
+        return;
+      }
+      processingOAuth.current = true;
+
       setLoading(true);
       setError("");
       try {
@@ -96,6 +104,10 @@ export default function SignInModal({ open, onClose }: Props) {
         setError(e.detail || `${provider} sign-in failed`);
       } finally {
         setLoading(false);
+        // Reset after a delay to allow retries
+        setTimeout(() => {
+          processingOAuth.current = false;
+        }, 2000);
       }
     },
     [loginWithToken, onClose]
