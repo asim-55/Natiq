@@ -155,14 +155,18 @@ export default function SignInModal({ open, onClose }: Props) {
       setError("Microsoft OAuth not configured");
       return;
     }
+    sessionStorage.setItem("oauth_provider", "microsoft");
     const redirectUri = `${window.location.origin}/auth/callback`;
+    const state = `microsoft:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem("oauth_state", state);
     const url =
       `https://login.microsoftonline.com/common/oauth2/v2.0/authorize` +
       `?client_id=${MICROSOFT_CLIENT_ID}` +
       `&response_type=code` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=openid%20email%20profile%20User.Read` +
-      `&response_mode=query`;
+      `&response_mode=query` +
+      `&state=${encodeURIComponent(state)}`;
     window.open(url, "microsoft-oauth", "width=500,height=700");
   }
 
