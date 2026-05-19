@@ -7,6 +7,23 @@ function headers(token: string): HeadersInit {
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 }
 
+
+async function blobObjectUrl(path: string, token: string, init: RequestInit = {}): Promise<string> {
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
+    headers: { ...headers(token), ...(init.headers || {}) },
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ detail: res.statusText }));
+    const detail = errBody.detail ?? errBody;
+    const err = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    (err as any).status = res.status;
+    (err as any).detail = detail;
+    throw err;
+  }
+  return URL.createObjectURL(await res.blob());
+}
+
 async function api<T>(path: string, init: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, init);
   if (!res.ok) {
@@ -132,8 +149,8 @@ export async function deleteVoice(token: string, voiceId: string): Promise<void>
   });
 }
 
-export function previewVoiceUrl(token: string, voiceId: string): string {
-  return `${BASE}/preview-voice/${encodeURIComponent(voiceId)}?token=${encodeURIComponent(token)}`;
+export function previewVoiceUrl(token: string, voiceId: string): Promise<string> {
+  return blobObjectUrl(`/preview-voice/${encodeURIComponent(voiceId)}`, token);
 }
 
 // Generations ----------------------------------------------------------------
@@ -160,25 +177,14 @@ export async function generateAudio(
   if (speed !== undefined) body.speed = speed;
   if (volume !== undefined) body.volume = volume;
 
-  const res = await fetch(`${BASE}${endpoint}`, {
+  return blobObjectUrl(endpoint, token, {
     method: "POST",
-    headers: headers(token),
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({ detail: res.statusText }));
-    const detail = errBody.detail ?? errBody;
-    const err = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
-    (err as any).status = res.status;
-    (err as any).detail = detail;
-    throw err;
-  }
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
 }
 
-export function playUrl(token: string, id: number): string {
-  return `${BASE}/play/${id}?token=${encodeURIComponent(token)}`;
+export function playUrl(token: string, id: number): Promise<string> {
+  return blobObjectUrl(`/play/${id}`, token);
 }
 
 // Emotions -------------------------------------------------------------------

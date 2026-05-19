@@ -2,29 +2,55 @@ import { useEffect, useRef, useState } from "react";
 import { Download, Pause, Play } from "lucide-react";
 
 interface Props {
-  src: string;
+  src?: string;
+  loadSrc?: () => Promise<string>;
+  loadKey?: string | number;
   downloadName?: string;
 }
 
 // Wave heights for the bar visualiser (21 bars)
 const WAVE = [40, 65, 50, 80, 55, 90, 60, 45, 75, 50, 85, 55, 40, 70, 55, 80, 45, 65, 88, 50, 60];
 
-export default function AudioPlayer({ src, downloadName = "audio.wav" }: Props) {
+export default function AudioPlayer({ src, loadSrc, loadKey, downloadName = "audio.wav" }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const [resolvedSrc, setResolvedSrc] = useState(src || "");
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+    let objectUrl = "";
     setPlaying(false);
     setCurrent(0);
     setDuration(0);
-  }, [src]);
+
+    if (loadSrc) {
+      setResolvedSrc("");
+      loadSrc()
+        .then((url) => {
+          if (cancelled) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          objectUrl = url;
+          setResolvedSrc(url);
+        })
+        .catch(() => setResolvedSrc(""));
+    } else {
+      setResolvedSrc(src || "");
+    }
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [src, loadKey]);
 
   function toggle() {
     const a = audioRef.current;
-    if (!a) return;
+    if (!a || !resolvedSrc) return;
     if (playing) { a.pause(); } else { a.play(); }
     setPlaying(!playing);
   }
@@ -62,7 +88,7 @@ export default function AudioPlayer({ src, downloadName = "audio.wav" }: Props) 
     <div className="flex items-center gap-3 rounded-2xl border border-cyan-300/20 bg-ink-900/80 px-4 py-3">
       <audio
         ref={audioRef}
-        src={src}
+        src={resolvedSrc}
         onTimeUpdate={() => setCurrent(audioRef.current?.currentTime ?? 0)}
         onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
         onEnded={() => { setPlaying(false); setCurrent(0); }}
@@ -117,7 +143,7 @@ export default function AudioPlayer({ src, downloadName = "audio.wav" }: Props) 
 
       {/* Download */}
       <a
-        href={src}
+        href={resolvedSrc}
         download={downloadName}
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-cyan-300 transition self-center"
         title="Download"

@@ -85,6 +85,7 @@ export default function InstantVoiceCloningPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadFileName, setUploadFileName] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
+  const previewUrlRef = useRef("");
   const [error, setError] = useState("");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
@@ -118,6 +119,7 @@ export default function InstantVoiceCloningPage() {
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current);
     streamRef.current?.getTracks().forEach(t => t.stop());
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
   }, []);
 
   function fmtTime(s: number) {
@@ -429,7 +431,10 @@ export default function InstantVoiceCloningPage() {
       
       setPreviewUploadVoiceId(voiceId);
       setUploadFileName(fileName);
-      setPreviewUrl(token ? previewVoiceUrl(token, voiceId) : "");
+      const nextPreviewUrl = token ? await previewVoiceUrl(token, voiceId) : "";
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = nextPreviewUrl;
+      setPreviewUrl(nextPreviewUrl);
       setUploadPhase("preview");
       await loadVoices();
       setSelectedVoiceId(voiceId);
@@ -458,6 +463,8 @@ export default function InstantVoiceCloningPage() {
     setUploadBlob(null);
     setUploadOriginalName("");
     setUploadFileName("");
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = "";
     setPreviewUrl("");
     setUploadPhase("idle");
     setError("");
@@ -615,7 +622,7 @@ export default function InstantVoiceCloningPage() {
                           ↺ Record another
                         </button>
                       </div>
-                      <AudioPlayer src={previewVoiceUrl(token, previewVoiceId)} downloadName={`${recordName || "recording"}.wav`} />
+                      <AudioPlayer loadSrc={() => previewVoiceUrl(token, previewVoiceId)} loadKey={previewVoiceId} downloadName={`${recordName || "recording"}.wav`} />
                       <button
                         onClick={handleDoneRecording}
                         className="primary-button w-full justify-center"

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { fetchGenerationUsage, fetchUploadUsage } from "../../api/client";
 import type { UsageDay } from "../../api/client";
@@ -116,7 +116,6 @@ function UsageChart({ data, title }: { data: { date: string; credits: number }[]
 const TABS = ["Voice Generation", "Voice Uploads"] as const;
 type Tab = typeof TABS[number];
 
-const API_KEY_OPTIONS = ["All API Keys", "psk_live_••••• main", "psk_live_••••• test"];
 
 export default function UsagePage() {
   const { user, token } = useAuth();
@@ -139,8 +138,6 @@ export default function UsagePage() {
   }, [token]);
 
   const [tab, setTab] = useState<Tab>("Voice Generation");
-  const [keyOpen, setKeyOpen] = useState(false);
-  const [selectedKey, setSelectedKey] = useState(API_KEY_OPTIONS[0]);
   const [calOpen, setCalOpen] = useState(false);
   const [calPos, setCalPos] = useState({ top: 0, right: 0 });
   const calBtnRef = useRef<HTMLButtonElement>(null);
@@ -163,7 +160,16 @@ export default function UsagePage() {
   const fmtDate = (d: Date) =>
     `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
 
-  const chartData = tab === "Voice Generation" ? genData : uploadData;
+  const inSelectedRange = (item: UsageDay) => {
+    const itemDate = new Date(`${item.date}T00:00:00`);
+    const start = new Date(dateRange[0]);
+    const end = new Date(dateRange[1]);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    return itemDate >= start && itemDate <= end;
+  };
+
+  const chartData = (tab === "Voice Generation" ? genData : uploadData).filter(inSelectedRange);
 
   return (
     <div className="grid gap-6">
@@ -175,30 +181,6 @@ export default function UsagePage() {
             <h2 className="mt-1 text-2xl font-semibold text-white">Usage</h2>
           </div>
           <div className="flex flex-wrap gap-3">
-            {/* All API Keys dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => { setKeyOpen(o => !o); setCalOpen(false); }}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-200 hover:bg-white/10 transition"
-              >
-                {selectedKey}
-                <ChevronDown size={14} className={`transition-transform ${keyOpen ? "rotate-180" : ""}`} />
-              </button>
-              {keyOpen && (
-                <div className="absolute right-0 z-30 mt-2 w-56 rounded-xl border border-white/10 bg-ink-900 shadow-2xl">
-                  {API_KEY_OPTIONS.map(k => (
-                    <button
-                      key={k}
-                      onClick={() => { setSelectedKey(k); setKeyOpen(false); }}
-                      className={`w-full px-4 py-2.5 text-left text-sm transition hover:bg-white/10 ${k === selectedKey ? "text-cyan-300" : "text-slate-300"}`}
-                    >
-                      {k}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Date Range Picker */}
             <div className="relative">
               <button
@@ -208,7 +190,7 @@ export default function UsagePage() {
                     const r = calBtnRef.current?.getBoundingClientRect();
                     if (r) setCalPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
                   }
-                  setCalOpen(o => !o); setKeyOpen(false);
+                  setCalOpen(o => !o);
                 }}
                 className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-200 hover:bg-white/10 transition"
               >

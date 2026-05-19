@@ -77,10 +77,20 @@ export default function SignInModal({ open, onClose }: Props) {
     async (event: MessageEvent) => {
       if (!open) return;
       if (event.origin !== window.location.origin) return;
-      const { provider, code, error, error_description: errorDescription } = event.data || {};
+      const { provider, code, state, error, error_description: errorDescription } = event.data || {};
+      const expectedState = sessionStorage.getItem("oauth_state") || "";
+      if (!state || !expectedState || state !== expectedState) {
+        setLoading(false);
+        setError("OAuth state validation failed");
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("oauth_provider");
+        return;
+      }
       if (error) {
         setLoading(false);
         setError(errorDescription || error || `${provider || "OAuth"} sign-in failed`);
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("oauth_provider");
         return;
       }
       if (!provider || !code) return;
@@ -105,6 +115,8 @@ export default function SignInModal({ open, onClose }: Props) {
         }
         if (data) {
           loginWithToken(data.access_token, data.refresh_token, data.user, data.is_new);
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("oauth_provider");
           onClose();
         }
       } catch (e: any) {

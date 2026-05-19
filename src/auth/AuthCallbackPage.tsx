@@ -16,11 +16,22 @@ export default function AuthCallbackPage() {
     const code = params.get("code");
     const error = params.get("error");
     const errorDescription = params.get("error_description");
+    const state = params.get("state") || "";
+    const expectedState = sessionStorage.getItem("oauth_state") || "";
+
+    if (!state || !expectedState || state !== expectedState) {
+      window.opener?.postMessage(
+        { provider: sessionStorage.getItem("oauth_provider") || "oauth", error: "invalid_state", error_description: "OAuth state validation failed" },
+        window.location.origin,
+      );
+      window.close();
+      return;
+    }
 
     // Determine provider from the URL or referrer
     let provider = "";
     const url = window.location.href;
-    if (document.referrer.includes("github.com") || params.get("state")?.includes("github")) {
+    if (document.referrer.includes("github.com") || state.includes("github")) {
       provider = "github";
     } else if (
       document.referrer.includes("microsoftonline.com") ||
@@ -30,7 +41,7 @@ export default function AuthCallbackPage() {
       provider = "microsoft";
     }
 
-    // Fallback: check localStorage flag set before opening popup
+    // Fallback: check sessionStorage flag set before opening popup
     if (!provider) {
       provider = sessionStorage.getItem("oauth_provider") || "github";
     }
@@ -38,12 +49,16 @@ export default function AuthCallbackPage() {
     if (window.opener) {
       if (error) {
         window.opener.postMessage({ provider, error, error_description: errorDescription }, window.location.origin);
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("oauth_provider");
         window.close();
         return;
       }
 
       if (code) {
-        window.opener.postMessage({ provider, code }, window.location.origin);
+        window.opener.postMessage({ provider, code, state }, window.location.origin);
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("oauth_provider");
         window.close();
       }
     }

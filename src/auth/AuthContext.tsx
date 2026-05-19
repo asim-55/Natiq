@@ -44,20 +44,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isNew, setIsNew] = useState(false);
 
   useEffect(() => {
-    const savedAccess = localStorage.getItem("natiq_token");
-    const savedRefresh = localStorage.getItem("natiq_refresh");
+    const savedAccess = sessionStorage.getItem("natiq_token");
+    const savedRefresh = sessionStorage.getItem("natiq_refresh");
 
     const tryRefresh = async () => {
       if (!savedRefresh) { setReady(true); return; }
       try {
         const data = await refreshAccessToken(savedRefresh);
-        localStorage.setItem("natiq_token", data.access_token);
-        localStorage.setItem("natiq_refresh", data.refresh_token);
+        sessionStorage.setItem("natiq_token", data.access_token);
+        sessionStorage.setItem("natiq_refresh", data.refresh_token);
         setToken(data.access_token);
         setUser(data.user);
       } catch {
-        localStorage.removeItem("natiq_token");
-        localStorage.removeItem("natiq_refresh");
+        sessionStorage.removeItem("natiq_token");
+        sessionStorage.removeItem("natiq_refresh");
       } finally {
         setReady(true);
       }
@@ -76,8 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginWithToken = (accessToken: string, refreshToken: string, u: User, newUser = false) => {
-    localStorage.setItem("natiq_token", accessToken);
-    localStorage.setItem("natiq_refresh", refreshToken);
+    sessionStorage.setItem("natiq_token", accessToken);
+    sessionStorage.setItem("natiq_refresh", refreshToken);
     setToken(accessToken);
     setUser(u);
     setIsNew(newUser);
@@ -87,8 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       try { await logoutApi(token); } catch { /* ignore — blacklist best-effort */ }
     }
-    localStorage.removeItem("natiq_token");
-    localStorage.removeItem("natiq_refresh");
+    sessionStorage.removeItem("natiq_token");
+    sessionStorage.removeItem("natiq_refresh");
     setToken(null);
     setUser(null);
     setIsNew(false);

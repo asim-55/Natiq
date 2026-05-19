@@ -20,12 +20,14 @@ function useToast() {
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const counter = useRef(0);
 
+  const dismiss = (id: number) => setToasts(t => t.filter(x => x.id !== id));
+
   const show = (text: string, type: ToastMsg["type"] = "success") => {
     const id = ++counter.current;
     setToasts(t => [...t, { id, type, text }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 5000);
+    setTimeout(() => dismiss(id), 5000);
   };
-  return { toasts, show };
+  return { toasts, show, dismiss };
 }
 
 function ToastContainer({ toasts, onDismiss }: { toasts: ToastMsg[]; onDismiss: (id: number) => void }) {
@@ -310,15 +312,7 @@ type Tab = "general" | "members" | "sso";
 
 export default function OrganizationPage() {
   const { user, token } = useAuth();
-  const { toasts, show } = useToast();
-  const [dismissToast, setDismissToast] = useState<(id: number) => void>(() => () => {});
-
-  // Build dismiss callback (stable)
-  useEffect(() => {
-    setDismissToast(() => (id: number) => {
-      // handled by useToast internals — no-op, toasts self-dismiss
-    });
-  }, []);
+  const { toasts, show, dismiss } = useToast();
 
   const [activeTab, setActiveTab] = useState<Tab>("general");
   const [org, setOrg] = useState<Organization | null>(null);
@@ -497,7 +491,7 @@ export default function OrganizationPage() {
           />
         )}
 
-        <ToastContainer toasts={toasts} onDismiss={() => {}} />
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
       </>
     );
   }
@@ -799,7 +793,7 @@ export default function OrganizationPage() {
         />
       )}
 
-      <ToastContainer toasts={toasts} onDismiss={() => {}} />
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
   );
 }

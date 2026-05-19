@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Activity, Play, ChevronDown } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { fetchVoices, generateAudio } from "../../api/client";
@@ -48,6 +48,7 @@ export default function VoicePage() {
   const [volume, setVolume] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
+  const audioUrlRef = useRef("");
   const [hasResult, setHasResult] = useState(false);
   const [error, setError] = useState("");
 
@@ -96,6 +97,10 @@ export default function VoicePage() {
     }
   }, [voiceDropdownOpen, languageDropdownOpen, emotionDropdownOpen]);
 
+  useEffect(() => () => {
+    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+  }, []);
+
   const handleGenerate = async () => {
     if (!token) return;
     setIsGenerating(true); setHasResult(false); setError("");
@@ -103,6 +108,8 @@ export default function VoicePage() {
       if (!selectedVoiceId) throw new Error("No voice reference available. Go to Instant Voice Cloning to upload one first.");
       const emotionArg = effectiveEmotion === "NEUTRAL" ? undefined : effectiveEmotion.toLowerCase();
       const url = await generateAudio(token, voiceScript, language, selectedVoiceId, emotionArg, speed, volume);
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = url;
       setAudioUrl(url); setHasResult(true); refreshUser();
     } catch (err: any) {
       if (err?.detail?.upgrade_required || err?.status === 402 || err?.status === 403) {
