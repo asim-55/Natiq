@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Mic, Trash2, Upload } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { deleteVoice, fetchVoices, previewVoiceUrl, uploadVoice } from "../../api/client";
+import { deleteVoice, denoiseAudio, fetchVoices, previewVoiceUrl, uploadVoice } from "../../api/client";
 import type { Voice } from "../../types";
 import UpgradeModal from "../../components/UpgradeModal";
 import AudioPlayer from "../../components/AudioPlayer";
@@ -77,7 +77,7 @@ function DropZone({ onFile, isUploading, fileName }: {
 type InputMode = "Record" | "Upload";
 
 export default function InstantVoiceCloningPage() {
-  const { token, refreshUser } = useAuth();
+  const { token, refreshUser, user } = useAuth();
 
   const [inputMode, setInputMode] = useState<InputMode>("Upload");
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -89,6 +89,8 @@ export default function InstantVoiceCloningPage() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [enableDenoise, setEnableDenoise] = useState(false);
+  const [isDenoising, setIsDenoising] = useState(false);
 
   // Record metadata
   const [recordName, setRecordName] = useState("");
@@ -120,6 +122,31 @@ export default function InstantVoiceCloningPage() {
 
   function fmtTime(s: number) {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }
+
+  // Check if user has access to denoise feature (Plus and Pro plans only)
+  const canUseDenoise = user?.plan === "plus" || user?.plan === "pro";
+
+  /**
+   * Denoise audio if the feature is enabled and user has access
+   */
+  async function applyDenoiseIfEnabled(base64Audio: string): Promise<string> {
+    if (!enableDenoise || !canUseDenoise || !token) {
+      return base64Audio;
+    }
+    
+    setIsDenoising(true);
+    try {
+      const denoisedBase64 = await denoiseAudio(token, base64Audio);
+      return denoisedBase64;
+    } catch (err: any) {
+      // If denoising fails, log error but continue with original audio
+      console.error("Denoising failed:", err);
+      setError("Background noise removal failed. Continuing with original audio.");
+      return base64Audio;
+    } finally {
+      setIsDenoising(false);
+    }
   }
 
   /**
@@ -285,9 +312,12 @@ export default function InstantVoiceCloningPage() {
         reader.readAsDataURL(selectedBlob);
       });
 
+      // Apply denoising if enabled
+      const processedBase64 = await applyDenoiseIfEnabled(base64);
+
       // Upload the selected portion
       const fileName = `${recordName.trim() || "recording"}_${startTime.toFixed(1)}-${endTime.toFixed(1)}s.wav`;
-      const voiceId = await uploadVoice(token, base64, fileName);
+      const voiceId = await uploadVoice(token, processedBase64, fileName);
       
       setPreviewVoiceId(voiceId);
       setRecPhase("preview");
@@ -390,9 +420,12 @@ export default function InstantVoiceCloningPage() {
         reader.readAsDataURL(selectedBlob);
       });
 
+      // Apply denoising if enabled
+      const processedBase64 = await applyDenoiseIfEnabled(base64);
+
       // Upload the selected portion
       const fileName = `${uploadOriginalName.replace(/\.[^/.]+$/, "")}_${startTime.toFixed(1)}-${endTime.toFixed(1)}s.wav`;
-      const voiceId = await uploadVoice(token, base64, fileName);
+      const voiceId = await uploadVoice(token, processedBase64, fileName);
       
       setPreviewUploadVoiceId(voiceId);
       setUploadFileName(fileName);
@@ -487,6 +520,28 @@ export default function InstantVoiceCloningPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Background Noise Removal Toggle (Plus & Pro only) */}
+              {canUseDenoise && (
+                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium text-white">Background Noise Removal</span>
+                    <span className="text-xs text-slate-400">Uses AI to remove background noise from your recording</span>
+                  </div>
+                  <button
+                    onClick={() => setEnableDenoise(!enableDenoise)}
+                    className={`relative h-6 w-11 rounded-full transition-colors ${
+                      enableDenoise ? "bg-cyan-300" : "bg-slate-600"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                        enableDenoise ? "translate-x-5.5" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
 
               {/* Error message - always visible at top */}
               {error && (
@@ -662,7 +717,9 @@ export default function InstantVoiceCloningPage() {
                   {uploadPhase === "processing" && (
                     <div className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-600 bg-white/5">
                       <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-300 border-t-transparent" />
-                      <span className="text-sm font-semibold text-slate-400">Processing...</span>
+                      <span className="text-sm font-semibold text-slate-400">
+                        {isDenoising ? "Removing background noise..." : "Processing..."}
+                      </span>
                     </div>
                   )}
 

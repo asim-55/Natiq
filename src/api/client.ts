@@ -107,6 +107,15 @@ export async function uploadVoice(token: string, audioBase64: string, filename?:
   return res.voice_id;
 }
 
+export async function denoiseAudio(token: string, audioBase64: string): Promise<string> {
+  const res = await api<{ audio_base64: string }>("/denoise-audio", {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify({ audio_base64: audioBase64 }),
+  });
+  return res.audio_base64;
+}
+
 export async function fetchVoices(token: string): Promise<Voice[]> {
   const res = await api<{ items: Voice[] }>("/my-voices", { headers: headers(token) });
   return res.items;
