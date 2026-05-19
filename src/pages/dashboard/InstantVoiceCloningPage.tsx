@@ -462,6 +462,11 @@ export default function InstantVoiceCloningPage() {
                 ))}
               </div>
 
+              {/* Error message - always visible at top */}
+              {error && (
+                <p className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300">{error}</p>
+              )}
+
               {/* ── Record view ── */}
               {inputMode === "Record" && (
                 <div className="flex flex-col gap-4">
@@ -657,10 +662,6 @@ export default function InstantVoiceCloningPage() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {error && (
-                <p className="rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300">{error}</p>
               )}
             </div>
 
