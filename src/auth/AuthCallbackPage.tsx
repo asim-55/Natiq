@@ -14,6 +14,8 @@ export default function AuthCallbackPage() {
 
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
+    const error = params.get("error");
+    const errorDescription = params.get("error_description");
 
     // Determine provider from the URL or referrer
     let provider = "";
@@ -33,9 +35,17 @@ export default function AuthCallbackPage() {
       provider = sessionStorage.getItem("oauth_provider") || "github";
     }
 
-    if (code && window.opener) {
-      window.opener.postMessage({ provider, code }, window.location.origin);
-      window.close();
+    if (window.opener) {
+      if (error) {
+        window.opener.postMessage({ provider, error, error_description: errorDescription }, window.location.origin);
+        window.close();
+        return;
+      }
+
+      if (code) {
+        window.opener.postMessage({ provider, code }, window.location.origin);
+        window.close();
+      }
     }
   }, []);
 

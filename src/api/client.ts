@@ -26,8 +26,12 @@ export async function googleAuth(credential: string): Promise<AuthResponse> {
   return api("/auth/google", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ credential }) });
 }
 
-export async function githubAuth(code: string): Promise<AuthResponse> {
-  return api("/auth/github", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
+export async function githubAuth(code: string, redirectUri: string): Promise<AuthResponse> {
+  return api("/auth/github", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, redirect_uri: redirectUri }),
+  });
 }
 
 export async function microsoftAuth(code: string, redirectUri: string): Promise<AuthResponse> {

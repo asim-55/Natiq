@@ -76,7 +76,12 @@ export default function SignInModal({ open, onClose }: Props) {
   const handleOAuthMessage = useCallback(
     async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      const { provider, code } = event.data || {};
+      const { provider, code, error, error_description: errorDescription } = event.data || {};
+      if (error) {
+        setLoading(false);
+        setError(errorDescription || error || `${provider || "OAuth"} sign-in failed`);
+        return;
+      }
       if (!provider || !code) return;
 
       // Prevent duplicate processing of the same OAuth code
@@ -91,7 +96,8 @@ export default function SignInModal({ open, onClose }: Props) {
       try {
         let data;
         if (provider === "github") {
-          data = await githubAuth(code);
+          const redirectUri = `${window.location.origin}/auth/callback`;
+          data = await githubAuth(code, redirectUri);
         } else if (provider === "microsoft") {
           const redirectUri = `${window.location.origin}/auth/callback`;
           data = await microsoftAuth(code, redirectUri);
@@ -126,8 +132,16 @@ export default function SignInModal({ open, onClose }: Props) {
       setError("GitHub OAuth not configured");
       return;
     }
+    sessionStorage.setItem("oauth_provider", "github");
     const redirectUri = `${window.location.origin}/auth/callback`;
-    const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
+    const state = `github:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem("oauth_state", state);
+    const url =
+      `https://github.com/login/oauth/authorize` +
+      `?client_id=${GITHUB_CLIENT_ID}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&scope=user:email` +
+      `&state=${encodeURIComponent(state)}`;
     window.open(url, "github-oauth", "width=500,height=700");
   }
 
