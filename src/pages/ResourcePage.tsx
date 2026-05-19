@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, Sparkles, Mic2, Globe, Zap } from "lucide-react";
+import { ArrowRight, Sparkles, Mic2, Globe, Zap, Clock, User, Tag } from "lucide-react";
 
-const content: Record<string, { eyebrow: string; title: string; text: string; cards: {title: string; text: string; icon?: any}[] }> = {
+const content: Record<string, { eyebrow: string; title: string; text: string; cards: {title: string; text: string; icon?: any; category?: string; readTime?: string; author?: string; featured?: boolean}[] }> = {
   docs: {
     eyebrow: "Documentation",
     title: "Build Urdu voice into your product",
@@ -80,42 +80,74 @@ const content: Record<string, { eyebrow: string; title: string; text: string; ca
       {
         title: "Getting Started with Natiq TTS",
         text: "A comprehensive guide to understanding Natiq's text-to-speech capabilities. Primary focus on Roman Urdu with 23 emotions, plus neutral speech generation in 20+ languages including English, Arabic, Hindi, and more. Learn how Natiq handles spelling variations and pronunciation patterns.",
+        category: "Getting Started",
+        readTime: "8 min read",
+        author: "Natiq Team",
+        featured: true
       },
       {
         title: "23 Emotions: A Complete Guide",
         text: "Deep dive into each of Natiq's 23 emotional voice styles. Understand when to use happy, sad, dramatic, motivational, or poetic voices for maximum impact in your content.",
+        category: "Features",
+        readTime: "12 min read",
+        author: "Natiq Team",
+        featured: true
       },
       {
         title: "Voice Cloning Best Practices",
         text: "How to record the perfect voice sample for instant cloning. Tips on microphone quality, recording environment, speaking style, and sample duration for optimal results.",
+        category: "Tutorials",
+        readTime: "6 min read",
+        author: "Natiq Team"
       },
       {
         title: "Building AI Chatbots with Urdu Voice",
         text: "Integrate Natiq into conversational AI systems. Learn authentication, real-time generation, response caching, and creating natural voice interactions in Urdu.",
+        category: "Development",
+        readTime: "10 min read",
+        author: "Natiq Team"
       },
       {
         title: "Content Creator's Guide to TTS",
         text: "How YouTubers, Instagram creators, and TikTok producers use Natiq for voiceovers. Workflow automation, emotion selection strategies, and audio post-processing tips.",
+        category: "Use Cases",
+        readTime: "7 min read",
+        author: "Natiq Team"
       },
       {
         title: "Roman Urdu Pronunciation Deep Dive",
         text: "Understanding how Natiq handles spelling variations (kya/kia/kiya, bohat/bohut/buhat), mixed Urdu-English text, and natural Pakistani speaking patterns for realistic voice output.",
+        category: "Technical",
+        readTime: "9 min read",
+        author: "Natiq Team"
       },
       {
         title: "API Integration Patterns",
         text: "Real-world code examples for integrating Natiq into web apps, mobile applications, backend services, and automation workflows. Authentication, error handling, and rate limiting.",
+        category: "Development",
+        readTime: "11 min read",
+        author: "Natiq Team"
       },
       {
         title: "Emotion-Aware Content Strategy",
         text: "Match emotions to content types: use dramatic voices for storytelling, motivational for inspiring content, calm for meditation, funny for comedy, and romantic for emotional scenes.",
+        category: "Strategy",
+        readTime: "8 min read",
+        author: "Natiq Team"
       },
       {
         title: "From Neutral to Expressive Speech",
         text: "When to use emotion-based generation vs neutral speech. Compare use cases for IVR systems, customer support, narration, character voices, and conversational agents.",
+        category: "Use Cases",
+        readTime: "6 min read",
+        author: "Natiq Team"
       },
       {
         title: "Multilingual TTS Strategy",
         text: "Leverage Natiq's primary Urdu focus with full emotion control, while also using neutral speech generation for 20+ supported languages. Build multilingual applications with consistent voice quality across English, Arabic, Hindi, Turkish, and more.",
+        category: "Strategy",
+        readTime: "10 min read",
+        author: "Natiq Team"
       },
     ],
   },
@@ -124,6 +156,9 @@ const content: Record<string, { eyebrow: string; title: string; text: string; ca
 export default function ResourcePage() {
   const { page } = useParams<{ page: string }>();
   const c = content[page || "docs"] || content.docs;
+  const isBlog = page === "blog";
+  const featuredArticles = isBlog ? c.cards.filter(card => card.featured) : [];
+  const regularArticles = isBlog ? c.cards.filter(card => !card.featured) : c.cards;
 
   return (
     <main className="relative z-10 min-h-screen pt-32">
@@ -170,18 +205,79 @@ export default function ResourcePage() {
               </div>
             </div>
           </div>
-          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {c.cards.map(({title, text, icon: Icon}) => (
-              <article key={title} className="soft-card p-6">
-                {Icon && (
-                  <div className="mb-4 inline-flex rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-2.5 text-cyan-200">
-                    <Icon size={20} />
-                  </div>
-                )}
-                <h2 className="text-xl font-semibold text-white">{title}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
-              </article>
-            ))}
+
+          {/* Featured Articles for Blog */}
+          {isBlog && featuredArticles.length > 0 && (
+            <div className="mt-14">
+              <div className="mb-6 flex items-center gap-2">
+                <Sparkles size={20} className="text-cyan-300" />
+                <h2 className="text-xl font-semibold text-white">Featured Articles</h2>
+              </div>
+              <div className="grid gap-6 lg:grid-cols-2">
+                {featuredArticles.map(({title, text, category, readTime, author}) => (
+                  <article key={title} className="group relative overflow-hidden rounded-3xl border border-cyan-300/20 bg-gradient-to-br from-cyan-300/10 to-transparent p-8 transition hover:border-cyan-300/40 hover:shadow-lg hover:shadow-cyan-300/10">
+                    <div className="mb-4 flex items-center gap-3 text-xs">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 font-medium text-cyan-200">
+                        <Tag size={12} />
+                        {category}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-slate-400">
+                        <Clock size={12} />
+                        {readTime}
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white group-hover:text-cyan-100 transition">{title}</h3>
+                    <p className="mt-3 text-base leading-7 text-slate-300">{text}</p>
+                    <div className="mt-6 flex items-center border-t border-white/10 pt-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-400">
+                        <User size={14} />
+                        <span>{author}</span>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Regular Articles */}
+          <div className={`${isBlog ? 'mt-14' : 'mt-14'}`}>
+            {isBlog && <h2 className="mb-6 text-xl font-semibold text-white">All Articles</h2>}
+            <div className={`grid gap-5 ${isBlog ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+              {regularArticles.map(({title, text, icon: Icon, category, readTime, author}) => (
+                <article key={title} className={`group soft-card p-6 transition hover:border-cyan-300/30 ${isBlog ? 'hover:shadow-lg hover:shadow-cyan-300/5' : ''}`}>
+                  {Icon && (
+                    <div className="mb-4 inline-flex rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-2.5 text-cyan-200">
+                      <Icon size={20} />
+                    </div>
+                  )}
+                  {isBlog && category && (
+                    <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-medium">
+                        <Tag size={10} />
+                        {category}
+                      </span>
+                      {readTime && (
+                        <span className="flex items-center gap-1">
+                          <Clock size={10} />
+                          {readTime}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <h2 className="text-xl font-semibold text-white group-hover:text-cyan-100 transition">{title}</h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
+                  {isBlog && (
+                    <div className="mt-4 flex items-center border-t border-white/10 pt-4">
+                      <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                        <User size={12} />
+                        {author}
+                      </span>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
           </div>
           
           {page === "about" && (

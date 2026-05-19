@@ -122,6 +122,57 @@ export default function InstantVoiceCloningPage() {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   }
 
+  /**
+   * Detect if an AudioBuffer contains actual vocal content or is mostly silence
+   * Returns true if silence/no vocals detected, false if vocals present
+   */
+  async function detectSilence(audioBlob: Blob): Promise<boolean> {
+    try {
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioContext = new AudioContext();
+      const buffer = await audioContext.decodeAudioData(arrayBuffer);
+      audioContext.close();
+
+      // Get all channels and calculate RMS (Root Mean Square) energy
+      let totalRMS = 0;
+      const numChannels = buffer.numberOfChannels;
+      
+      for (let channel = 0; channel < numChannels; channel++) {
+        const data = buffer.getChannelData(channel);
+        let sumSquares = 0;
+        
+        for (let i = 0; i < data.length; i++) {
+          sumSquares += data[i] * data[i];
+        }
+        
+        const rms = Math.sqrt(sumSquares / data.length);
+        totalRMS += rms;
+      }
+      
+      const avgRMS = totalRMS / numChannels;
+      
+      // Also check peak amplitude to detect very quiet recordings
+      let maxAmplitude = 0;
+      for (let channel = 0; channel < numChannels; channel++) {
+        const data = buffer.getChannelData(channel);
+        for (let i = 0; i < data.length; i++) {
+          maxAmplitude = Math.max(maxAmplitude, Math.abs(data[i]));
+        }
+      }
+      
+      // Thresholds for silence detection
+      // RMS below 0.01 typically indicates silence or very quiet background noise
+      // Peak amplitude below 0.05 indicates no significant audio peaks
+      const isSilent = avgRMS < 0.01 || maxAmplitude < 0.05;
+      
+      return isSilent;
+    } catch (error) {
+      console.error("Error analyzing audio:", error);
+      // If we can't analyze, assume it's not silent to avoid false positives
+      return false;
+    }
+  }
+
   async function startRecording() {
     if (!token) return;
     setError("");
@@ -140,9 +191,20 @@ export default function InstantVoiceCloningPage() {
         }
       };
 
-      recorder.addEventListener("stop", () => {
+      recorder.addEventListener("stop", async () => {
         // Create blob from all chunks
         const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+        
+        // Check if the recording is silent
+        const isSilent = await detectSilence(blob);
+        if (isSilent) {
+          setError("No voice detected in the recording. Please record again with clear vocals.");
+          setRecPhase("idle");
+          setRecordedBlob(null);
+          recordedChunksRef.current = [];
+          return;
+        }
+        
         setRecordedBlob(blob);
         setRecPhase("waveform");
       }, { once: true });
@@ -157,7 +219,7 @@ export default function InstantVoiceCloningPage() {
     }
   }
 
-  function stopRecording() {
+  async function stopRecording() {
     // Validate minimum recording time
     if (recordingTime < 15) {
       setError("Recording must be at least 15 seconds long. Please continue recording.");
@@ -267,6 +329,13 @@ export default function InstantVoiceCloningPage() {
       
       if (buffer.duration < 15) {
         setError("Uploaded audio must be at least 15 seconds long. Please upload a longer file.");
+        return;
+      }
+      
+      // Check if the uploaded audio is silent
+      const isSilent = await detectSilence(file);
+      if (isSilent) {
+        setError("No voice detected in the uploaded file. Please upload an audio file with clear vocals.");
         return;
       }
       
