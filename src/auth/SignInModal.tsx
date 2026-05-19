@@ -75,6 +75,7 @@ export default function SignInModal({ open, onClose }: Props) {
   // ---------------------------------------------------------------------------
   const handleOAuthMessage = useCallback(
     async (event: MessageEvent) => {
+      if (!open) return;
       if (event.origin !== window.location.origin) return;
       const { provider, code, error, error_description: errorDescription } = event.data || {};
       if (error) {
@@ -116,13 +117,14 @@ export default function SignInModal({ open, onClose }: Props) {
         }, 2000);
       }
     },
-    [loginWithToken, onClose]
+    [loginWithToken, onClose, open]
   );
 
   useEffect(() => {
+    if (!open) return;
     window.addEventListener("message", handleOAuthMessage);
     return () => window.removeEventListener("message", handleOAuthMessage);
-  }, [handleOAuthMessage]);
+  }, [handleOAuthMessage, open]);
 
   // ---------------------------------------------------------------------------
   // GitHub redirect
