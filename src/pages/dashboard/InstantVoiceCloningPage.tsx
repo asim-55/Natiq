@@ -133,37 +133,63 @@ export default function InstantVoiceCloningPage() {
       const buffer = await audioContext.decodeAudioData(arrayBuffer);
       audioContext.close();
 
-      // Get all channels and calculate RMS (Root Mean Square) energy
-      let totalRMS = 0;
       const numChannels = buffer.numberOfChannels;
+      const sampleRate = buffer.sampleRate;
+      const duration = buffer.duration;
       
-      for (let channel = 0; channel < numChannels; channel++) {
-        const data = buffer.getChannelData(channel);
-        let sumSquares = 0;
-        
-        for (let i = 0; i < data.length; i++) {
-          sumSquares += data[i] * data[i];
-        }
-        
-        const rms = Math.sqrt(sumSquares / data.length);
-        totalRMS += rms;
-      }
+      // Analyze in 100ms windows to detect speech patterns
+      const windowSize = Math.floor(sampleRate * 0.1); // 100ms windows
+      const numWindows = Math.floor(buffer.length / windowSize);
       
-      const avgRMS = totalRMS / numChannels;
-      
-      // Also check peak amplitude to detect very quiet recordings
+      let activeWindows = 0;
+      let totalRMS = 0;
       let maxAmplitude = 0;
+      
       for (let channel = 0; channel < numChannels; channel++) {
         const data = buffer.getChannelData(channel);
-        for (let i = 0; i < data.length; i++) {
-          maxAmplitude = Math.max(maxAmplitude, Math.abs(data[i]));
+        
+        // Analyze each window
+        for (let w = 0; w < numWindows; w++) {
+          const start = w * windowSize;
+          const end = Math.min(start + windowSize, data.length);
+          
+          let sumSquares = 0;
+          let windowMax = 0;
+          
+          for (let i = start; i < end; i++) {
+            const sample = data[i];
+            sumSquares += sample * sample;
+            windowMax = Math.max(windowMax, Math.abs(sample));
+          }
+          
+          const windowRMS = Math.sqrt(sumSquares / (end - start));
+          totalRMS += windowRMS;
+          maxAmplitude = Math.max(maxAmplitude, windowMax);
+          
+          // A window is "active" if it has significant energy
+          // Speech typically has RMS above 0.02 and peaks above 0.1
+          if (windowRMS > 0.02 && windowMax > 0.1) {
+            activeWindows++;
+          }
         }
       }
       
-      // Thresholds for silence detection
-      // RMS below 0.01 typically indicates silence or very quiet background noise
-      // Peak amplitude below 0.05 indicates no significant audio peaks
-      const isSilent = avgRMS < 0.01 || maxAmplitude < 0.05;
+      const avgRMS = totalRMS / (numWindows * numChannels);
+      const activeRatio = activeWindows / (numWindows * numChannels);
+      
+      // Detection criteria:
+      // 1. Overall RMS must be above 0.015 (has some energy)
+      // 2. Peak amplitude must be above 0.08 (has significant peaks)
+      // 3. At least 10% of windows should be "active" (has speech-like patterns)
+      const isSilent = avgRMS < 0.015 || maxAmplitude < 0.08 || activeRatio < 0.10;
+      
+      console.log("Audio analysis:", {
+        duration: duration.toFixed(2) + "s",
+        avgRMS: avgRMS.toFixed(4),
+        maxAmplitude: maxAmplitude.toFixed(4),
+        activeRatio: (activeRatio * 100).toFixed(1) + "%",
+        isSilent
+      });
       
       return isSilent;
     } catch (error) {
