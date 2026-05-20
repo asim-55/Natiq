@@ -41,14 +41,20 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const creditPct = user ? Math.min(100, Math.round((user.credits / planMaxCredits) * 100)) : 0;
 
   return (
-    <div className="flex h-full flex-col p-5">
+    <div className="flex h-screen flex-col p-5">
       {/* Logo */}
-      <Link to="/" onClick={onNavigate} className="flex items-center gap-3 px-2">
+      <Link to="/" onClick={onNavigate} className="flex items-center gap-3 px-2 flex-shrink-0">
         <img src="/natiq_logo.png" alt="Natiq" className="h-10 w-auto" />
       </Link>
 
-      {/* Top nav */}
-      <nav className="mt-8 flex-1 space-y-1">
+      {/* Top nav - scrollable */}
+      <nav 
+        className="mt-8 flex-1 space-y-1 overflow-y-auto pr-2"
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255,255,255,0.1) transparent'
+        }}
+      >
         {TOP_NAV.map(item => (
           <Link
             key={item.path}
@@ -63,8 +69,8 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      {/* Credits bar */}
-      <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4 mt-4">
+      {/* Credits bar - always visible at bottom */}
+      <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-4 mt-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-white">Credits</p>
           <span className="text-xs capitalize text-cyan-300">{user?.plan ?? "free"}</span>
@@ -136,8 +142,8 @@ export default function DashboardLayout() {
     <div className="min-h-screen bg-ink-950 text-slate-100">
       <div className="pointer-events-none fixed inset-0 bg-radial-field opacity-70" />
       <div className="relative z-10 flex min-h-screen">
-        {/* Desktop sidebar */}
-        <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-ink-900/75 backdrop-blur-2xl lg:block">
+        {/* Desktop sidebar - fixed height */}
+        <aside className="hidden lg:block w-72 shrink-0 border-r border-white/10 bg-ink-900/75 backdrop-blur-2xl h-screen sticky top-0">
           <Sidebar />
         </aside>
 
@@ -145,7 +151,7 @@ export default function DashboardLayout() {
         {mobileOpen && (
           <div className="fixed inset-0 z-40 flex lg:hidden">
             <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-            <aside className="relative z-50 w-72 border-r border-white/10 bg-ink-900 overflow-y-auto">
+            <aside className="relative z-50 w-72 border-r border-white/10 bg-ink-900 h-screen">
               <Sidebar onNavigate={() => setMobileOpen(false)} />
             </aside>
           </div>
