@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart2, Building2, ChevronDown, Clock3, Home, Key, Layers, LogOut,
-  Mic2, Settings, CreditCard,
+  Mic2, Settings, CreditCard, User as UserIcon,
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 
@@ -32,15 +32,9 @@ const SETTINGS_SUB: NavItem[] = [
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [settingsOpen, setSettingsOpen] = useState(
-    SETTINGS_SUB.some(s => location.pathname === s.path)
-  );
+  const { user } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
-
-  function handleLogout() { logout(); navigate("/"); }
 
   const planMaxCredits =
     user?.plan === "pro" ? 25000 : user?.plan === "plus" ? 5000 : 500;
@@ -67,42 +61,6 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             {item.label}
           </Link>
         ))}
-
-        {/* Settings collapsible */}
-        <div>
-          <button
-            onClick={() => setSettingsOpen(o => !o)}
-            className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition
-              ${SETTINGS_SUB.some(s => isActive(s.path)) ? "text-white" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}
-          >
-            <Settings size={18} />
-            <span className="flex-1 text-left">Settings</span>
-            <ChevronDown
-              size={15}
-              className={`text-slate-500 transition-transform duration-200 ${settingsOpen ? "rotate-180" : ""}`}
-            />
-          </button>
-
-          {settingsOpen && (
-            <div className="ml-4 mt-1 space-y-0.5 border-l border-white/10 pl-3">
-              {SETTINGS_SUB.map(sub => (
-                <Link
-                  key={sub.path}
-                  to={sub.path}
-                  onClick={onNavigate}
-                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition
-                    ${isActive(sub.path)
-                      ? "bg-cyan-300/15 text-cyan-200 border border-cyan-300/20"
-                      : "text-slate-400 hover:bg-white/10 hover:text-white"
-                    }`}
-                >
-                  {sub.icon}
-                  {sub.label}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
       </nav>
 
       {/* Credits bar */}
@@ -137,14 +95,6 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           Manage plan →
         </Link>
       </div>
-
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className="mt-4 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-400 hover:bg-white/10 hover:text-white transition"
-      >
-        <LogOut size={18} /> Log out
-      </button>
     </div>
   );
 }
@@ -152,12 +102,35 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
 export default function DashboardLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const allNav = [...TOP_NAV, ...SETTINGS_SUB];
   const currentPage = allNav.find(n => n.path === location.pathname);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    }
+    
+    if (userDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [userDropdownOpen]);
+
+  function handleLogout() {
+    logout();
+    navigate("/");
+    setUserDropdownOpen(false);
+  }
 
   return (
     <div className="min-h-screen bg-ink-950 text-slate-100">
@@ -203,13 +176,66 @@ export default function DashboardLayout() {
                 </div>
               </div>
 
-              {/* Right: user */}
-              <div className="flex items-center gap-3">
-                {user?.picture ? (
-                  <img src={user.picture} alt="" className="h-9 w-9 rounded-full object-cover border border-white/10" />
-                ) : (
-                  <div className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/10 text-xs font-bold text-cyan-200">
-                    {user?.name?.[0]?.toUpperCase() ?? "U"}
+              {/* Right: user dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center gap-2 rounded-xl hover:bg-white/5 transition p-1"
+                >
+                  {user?.picture ? (
+                    <img src={user.picture} alt="" className="h-9 w-9 rounded-full object-cover border border-white/10" />
+                  ) : (
+                    <div className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/10 text-xs font-bold text-cyan-200">
+                      {user?.name?.[0]?.toUpperCase() ?? "U"}
+                    </div>
+                  )}
+                  <ChevronDown 
+                    size={16} 
+                    className={`text-slate-400 transition-transform ${userDropdownOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {/* Dropdown menu */}
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-white/10 bg-ink-900 shadow-2xl z-50 overflow-hidden">
+                    {/* User info */}
+                    <div className="border-b border-white/10 p-4">
+                      <p className="text-sm font-semibold text-white truncate">{user?.name ?? "User"}</p>
+                      <p className="text-xs text-slate-400 truncate">{user?.email ?? ""}</p>
+                      <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-cyan-300/10 border border-cyan-300/20 px-2.5 py-1">
+                        <span className="text-xs font-semibold capitalize text-cyan-300">{user?.plan ?? "free"} Plan</span>
+                      </div>
+                    </div>
+
+                    {/* Settings items */}
+                    <div className="p-2">
+                      {SETTINGS_SUB.map(item => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setUserDropdownOpen(false)}
+                          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition
+                            ${location.pathname === item.path
+                              ? "bg-cyan-300/15 text-cyan-200"
+                              : "text-slate-300 hover:bg-white/10 hover:text-white"
+                            }`}
+                        >
+                          {item.icon}
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+
+                    {/* Logout */}
+                    <div className="border-t border-white/10 p-2">
+                      <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/10 hover:text-white transition"
+                      >
+                        <LogOut size={16} />
+                        Log out
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
