@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, Sparkles, Mic2, Globe, Zap, Clock, User, Tag } from "lucide-react";
+import { ArrowRight, Sparkles, Mic2, Globe, Zap, Clock, User, Tag, Layers, Code, BarChart3, DollarSign, FolderOpen } from "lucide-react";
 
 const content: Record<string, { eyebrow: string; title: string; text: string; cards: {title: string; text: string; icon?: any; category?: string; readTime?: string; author?: string; featured?: boolean}[] }> = {
   docs: {
@@ -73,81 +73,61 @@ const content: Record<string, { eyebrow: string; title: string; text: string; ca
     ],
   },
   blog: {
-    eyebrow: "Blog",
-    title: "Voice AI insights and multilingual TTS guides",
-    text: "Learn how to build with Natiq, understand Roman Urdu voice synthesis with emotions, explore multilingual neutral speech generation in 20+ languages, and discover real-world applications of text-to-voice technology.",
+    eyebrow: "Features",
+    title: "Powerful voice capabilities for every use case",
+    text: "Discover Natiq's complete feature set built specifically for Roman Urdu. From emotional voice synthesis to instant cloning, multilingual support, and enterprise-grade infrastructure.",
     cards: [
       {
-        title: "Getting Started with Natiq TTS",
-        text: "A comprehensive guide to understanding Natiq's text-to-speech capabilities. Primary focus on Roman Urdu with 23 emotions, plus neutral speech generation in 20+ languages including English, Arabic, Hindi, and more. Learn how Natiq handles spelling variations and pronunciation patterns.",
-        category: "Getting Started",
-        readTime: "8 min read",
-        author: "Natiq Team",
+        title: "23 Emotional Voice Styles",
+        text: "Generate expressive speech with 23 distinct emotions including happy, sad, angry, excited, calm, dramatic, romantic, serious, funny, motivational, poetic, and more. Each emotion is carefully tuned for natural delivery.",
+        icon: Sparkles,
         featured: true
       },
       {
-        title: "23 Emotions: A Complete Guide",
-        text: "Deep dive into each of Natiq's 23 emotional voice styles. Understand when to use happy, sad, dramatic, motivational, or poetic voices for maximum impact in your content.",
-        category: "Features",
-        readTime: "12 min read",
-        author: "Natiq Team",
+        title: "Instant Voice Cloning",
+        text: "Upload a 10-30 second audio sample and clone any voice instantly. Use your cloned voice across all 23 emotions while maintaining consistent quality and characteristics.",
+        icon: Mic2,
         featured: true
       },
       {
-        title: "Voice Cloning Best Practices",
-        text: "How to record the perfect voice sample for instant cloning. Tips on microphone quality, recording environment, speaking style, and sample duration for optimal results.",
-        category: "Tutorials",
-        readTime: "6 min read",
-        author: "Natiq Team"
+        title: "Roman Urdu Optimized",
+        text: "Built specifically for the way Pakistanis write and speak. Handles spelling variations (kya/kia, bohat/bohut), mixed Urdu-English text, and natural conversational patterns with perfect pronunciation.",
+        icon: Globe
       },
       {
-        title: "Building AI Chatbots with Urdu Voice",
-        text: "Integrate Natiq into conversational AI systems. Learn authentication, real-time generation, response caching, and creating natural voice interactions in Urdu.",
-        category: "Development",
-        readTime: "10 min read",
-        author: "Natiq Team"
+        title: "Real-Time Streaming",
+        text: "Stream audio as it's generated for conversational AI, live chat systems, and interactive applications. Low latency optimized for real-time voice interactions.",
+        icon: Zap
       },
       {
-        title: "Content Creator's Guide to TTS",
-        text: "How YouTubers, Instagram creators, and TikTok producers use Natiq for voiceovers. Workflow automation, emotion selection strategies, and audio post-processing tips.",
-        category: "Use Cases",
-        readTime: "7 min read",
-        author: "Natiq Team"
+        title: "Batch Processing",
+        text: "Generate hundreds or thousands of audio files efficiently for content creation, audiobooks, educational materials, and large-scale voice production workflows.",
+        icon: Layers
       },
       {
-        title: "Roman Urdu Pronunciation Deep Dive",
-        text: "Understanding how Natiq handles spelling variations (kya/kia/kiya, bohat/bohut/buhat), mixed Urdu-English text, and natural Pakistani speaking patterns for realistic voice output.",
-        category: "Technical",
-        readTime: "9 min read",
-        author: "Natiq Team"
+        title: "Multilingual Support",
+        text: "While Urdu is our primary focus with full emotion control, generate neutral speech in 20+ languages including English, Arabic, Hindi, Punjabi, Turkish, Bengali, Spanish, French, and more.",
+        icon: Globe
       },
       {
-        title: "API Integration Patterns",
-        text: "Real-world code examples for integrating Natiq into web apps, mobile applications, backend services, and automation workflows. Authentication, error handling, and rate limiting.",
-        category: "Development",
-        readTime: "11 min read",
-        author: "Natiq Team"
+        title: "REST API & SDKs",
+        text: "Simple REST API with comprehensive documentation. Easy integration into any application with clear examples, authentication methods, and error handling.",
+        icon: Code
       },
       {
-        title: "Emotion-Aware Content Strategy",
-        text: "Match emotions to content types: use dramatic voices for storytelling, motivational for inspiring content, calm for meditation, funny for comedy, and romantic for emotional scenes.",
-        category: "Strategy",
-        readTime: "8 min read",
-        author: "Natiq Team"
+        title: "Usage Analytics",
+        text: "Track generation history, monitor credit usage, analyze patterns by capability (TTS vs cloning), and get detailed insights into your voice generation activity.",
+        icon: BarChart3
       },
       {
-        title: "From Neutral to Expressive Speech",
-        text: "When to use emotion-based generation vs neutral speech. Compare use cases for IVR systems, customer support, narration, character voices, and conversational agents.",
-        category: "Use Cases",
-        readTime: "6 min read",
-        author: "Natiq Team"
+        title: "Flexible Pricing",
+        text: "Pay only for what you use with our credit-based system. Free tier for testing, Plus for creators, and Pro for high-volume production with volume discounts.",
+        icon: DollarSign
       },
       {
-        title: "Multilingual TTS Strategy",
-        text: "Leverage Natiq's primary Urdu focus with full emotion control, while also using neutral speech generation for 20+ supported languages. Build multilingual applications with consistent voice quality across English, Arabic, Hindi, Turkish, and more.",
-        category: "Strategy",
-        readTime: "10 min read",
-        author: "Natiq Team"
+        title: "Voice Management",
+        text: "Organize and manage your cloned voices with custom names, preview samples, and easy deletion. Upload multiple voices and switch between them seamlessly.",
+        icon: FolderOpen
       },
     ],
   },
@@ -198,7 +178,7 @@ export default function ResourcePage() {
                   >
                     <span className="block font-semibold capitalize">{item}</span>
                     <span className="mt-1 block text-sm text-slate-400">
-                      {item === "docs" ? "API and integration guides" : item === "about" ? "Mission and vision" : "Guides and insights"}
+                      {item === "docs" ? "API and integration guides" : item === "about" ? "Mission and vision" : "Platform capabilities"}
                     </span>
                   </Link>
                 ))}
@@ -208,131 +188,105 @@ export default function ResourcePage() {
 
           {/* Featured Articles for Blog */}
           {isBlog && featuredArticles.length > 0 && (
-            <div className="mt-16">
-              <div className="grid gap-8 lg:grid-cols-5">
-                {/* Hero Featured Article (Takes 3 columns) */}
-                {featuredArticles[0] && (
-                  <article className="group relative lg:col-span-3 overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-300/5 via-transparent to-blue-500/5 transition hover:border-cyan-300/30 hover:shadow-2xl hover:shadow-cyan-300/10">
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/40 to-transparent opacity-60"></div>
-                    <div className="relative p-10 lg:p-12 min-h-[400px] flex flex-col justify-end">
-                      <div className="mb-6 inline-flex items-center gap-2">
-                        <Sparkles size={18} className="text-cyan-300" />
-                        <span className="text-xs font-bold uppercase tracking-widest text-cyan-300">Featured Article</span>
+            <div className="mt-20">
+              <div className="grid gap-6 lg:grid-cols-2">
+                {featuredArticles.map(({title, text, icon: Icon}) => (
+                  <div key={title} className="relative overflow-hidden rounded-3xl border-2 border-cyan-300/20 bg-gradient-to-br from-cyan-300/5 to-transparent p-10">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-300/20 border border-cyan-300/40">
+                        {Icon && <Icon size={24} className="text-cyan-300" />}
                       </div>
-                      <div className="mb-4 flex flex-wrap items-center gap-3">
-                        <span className="rounded-lg bg-cyan-300/20 backdrop-blur-sm border border-cyan-300/30 px-3 py-1.5 text-xs font-bold text-cyan-200">
-                          {featuredArticles[0].category}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-sm text-slate-300">
-                          <Clock size={14} />
-                          {featuredArticles[0].readTime}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-sm text-slate-300">
-                          <User size={14} />
-                          {featuredArticles[0].author}
-                        </span>
-                      </div>
-                      <h3 className="text-3xl lg:text-4xl font-bold text-white leading-tight group-hover:text-cyan-100 transition mb-4">
-                        {featuredArticles[0].title}
-                      </h3>
-                      <p className="text-base lg:text-lg leading-relaxed text-slate-200 max-w-2xl">
-                        {featuredArticles[0].text}
-                      </p>
-                      <div className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 group-hover:gap-3 transition-all">
-                        Read article
-                        <ArrowRight size={16} />
-                      </div>
+                      <span className="text-xs font-black uppercase tracking-[0.2em] text-cyan-300">Core Feature</span>
                     </div>
-                  </article>
-                )}
-
-                {/* Second Featured Article (Takes 2 columns) */}
-                {featuredArticles[1] && (
-                  <article className="group lg:col-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/5 to-transparent transition hover:border-cyan-300/30 hover:shadow-xl hover:shadow-cyan-300/10">
-                    <div className="p-8 h-full flex flex-col">
-                      <div className="mb-5">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-cyan-300/10 border border-cyan-300/20 px-4 py-2 text-xs font-bold text-cyan-200">
-                          <Tag size={12} />
-                          {featuredArticles[1].category}
-                        </div>
-                      </div>
-                      <h3 className="text-2xl font-bold text-white leading-tight group-hover:text-cyan-100 transition">
-                        {featuredArticles[1].title}
-                      </h3>
-                      <p className="mt-4 text-sm leading-relaxed text-slate-300 flex-grow">
-                        {featuredArticles[1].text}
-                      </p>
-                      <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-xs text-slate-400">
-                          <span className="flex items-center gap-1.5">
-                            <Clock size={12} />
-                            {featuredArticles[1].readTime}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <User size={12} />
-                            {featuredArticles[1].author}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                )}
+                    
+                    <h3 className="text-3xl lg:text-4xl font-black text-white leading-[1.1] mb-5">
+                      {title}
+                    </h3>
+                    <p className="text-base leading-relaxed text-slate-300">
+                      {text}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Regular Articles */}
-          <div className={`${isBlog ? 'mt-16' : 'mt-14'}`}>
-            {isBlog && (
-              <div className="mb-8 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">Latest Articles</h2>
-                <div className="h-px flex-1 ml-6 bg-gradient-to-r from-white/20 to-transparent"></div>
+          {/* All Features - Bento Grid Layout */}
+          <div className={`${isBlog ? 'mt-20' : 'mt-14'}`}>
+            {isBlog ? (
+              <div className="space-y-12">
+                {/* Section title */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-1.5 w-1.5 rounded-full bg-cyan-300"></div>
+                    <h2 className="text-3xl font-black text-white">All Features</h2>
+                  </div>
+                </div>
+
+                {/* Bento-style asymmetric grid */}
+                <div className="grid gap-5 md:grid-cols-6 lg:grid-cols-12 auto-rows-fr">
+                  {regularArticles.map(({title, text, icon: Icon}, idx) => {
+                    // Vary the column spans for visual interest
+                    let colSpan = 'md:col-span-3 lg:col-span-4';
+                    if (idx === 0) colSpan = 'md:col-span-6 lg:col-span-6';
+                    else if (idx === 1) colSpan = 'md:col-span-3 lg:col-span-6';
+                    else if (idx === 2) colSpan = 'md:col-span-3 lg:col-span-4';
+                    else if (idx === 3) colSpan = 'md:col-span-6 lg:col-span-8';
+                    else if (idx === 4) colSpan = 'md:col-span-3 lg:col-span-4';
+                    else if (idx === 5) colSpan = 'md:col-span-3 lg:col-span-6';
+                    else if (idx === 6) colSpan = 'md:col-span-6 lg:col-span-6';
+                    
+                    // Vary the visual style
+                    const isBordered = idx % 3 === 0;
+                    const hasBackground = idx % 3 === 1;
+                    
+                    return (
+                      <div 
+                        key={title}
+                        className={`relative ${colSpan} ${
+                          isBordered 
+                            ? 'border-l-4 border-cyan-300 bg-cyan-300/5 pl-6 pr-6 py-7 rounded-r-2xl' 
+                            : hasBackground
+                            ? 'rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 p-7'
+                            : 'rounded-2xl border border-white/5 p-7'
+                        }`}
+                      >
+                        {Icon && (
+                          <div className="mb-5 inline-flex rounded-xl bg-gradient-to-br from-cyan-300/20 to-cyan-300/5 p-3 text-cyan-300 border border-cyan-300/20">
+                            <Icon size={22} />
+                          </div>
+                        )}
+                        
+                        <div className="flex flex-col h-full">
+                          <h3 className="text-xl lg:text-2xl font-bold text-white leading-tight mb-3">
+                            {title}
+                          </h3>
+                          
+                          <p className="text-sm leading-relaxed text-slate-400">
+                            {text}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              // Docs and About - keep original grid
+              <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                {regularArticles.map(({title, text, icon: Icon}) => (
+                  <article key={title} className="group soft-card p-6 transition hover:border-cyan-300/30">
+                    {Icon && (
+                      <div className="mb-4 inline-flex rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-2.5 text-cyan-200">
+                        <Icon size={20} />
+                      </div>
+                    )}
+                    <h2 className="text-xl font-semibold text-white group-hover:text-cyan-100 transition">{title}</h2>
+                    <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
+                  </article>
+                ))}
               </div>
             )}
-            <div className={`grid gap-6 ${isBlog ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
-              {regularArticles.map(({title, text, icon: Icon, category, readTime, author}, idx) => (
-                <article 
-                  key={title} 
-                  className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] p-7 transition hover:border-cyan-300/40 hover:bg-white/[0.04] hover:shadow-xl hover:shadow-cyan-300/5 ${
-                    isBlog && idx === 0 ? 'md:col-span-2 xl:col-span-1' : ''
-                  }`}
-                >
-                  {Icon && (
-                    <div className="mb-5 inline-flex rounded-xl bg-gradient-to-br from-cyan-300/20 to-cyan-300/5 p-3 text-cyan-300 border border-cyan-300/20">
-                      <Icon size={22} />
-                    </div>
-                  )}
-                  {isBlog && category && (
-                    <div className="mb-4">
-                      <span className="inline-block rounded-md bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-200 border border-white/10">
-                        {category}
-                      </span>
-                    </div>
-                  )}
-                  <h2 className="text-xl font-bold text-white leading-snug group-hover:text-cyan-100 transition">
-                    {title}
-                  </h2>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                    {text}
-                  </p>
-                  {isBlog && (
-                    <div className="mt-5 pt-5 border-t border-white/10 flex items-center justify-between text-xs text-slate-500">
-                      <span className="flex items-center gap-1.5">
-                        <User size={12} />
-                        {author}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock size={12} />
-                        {readTime}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Hover gradient effect */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-300/0 to-blue-500/0 opacity-0 group-hover:from-cyan-300/5 group-hover:to-blue-500/5 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                </article>
-              ))}
-            </div>
           </div>
           
           {page === "about" && (
