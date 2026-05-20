@@ -45,7 +45,7 @@ export default function HistoryPage() {
                       <td className="px-4 py-3 uppercase text-slate-300">{gen.language}</td>
                       <td className="px-4 py-3 text-slate-300">{gen.credits_used}</td>
                       <td className="px-4 py-3 text-slate-400">{gen.created_at}</td>
-                      <td className="px-4 py-3 min-w-[260px]">{token && <AudioPlayer loadSrc={() => playUrl(token, gen.id)} loadKey={gen.id} downloadName={`natiq_${gen.id}.wav`} />}</td>
+                      <td className="px-4 py-3 min-w-[260px]">{token && <AudioPlayer loadSrc={() => Promise.resolve(playUrl(token, gen.id))} loadKey={gen.id} downloadName={`natiq_${gen.id}.wav`} />}</td>
                     </tr>
                   ))}
                 </tbody>

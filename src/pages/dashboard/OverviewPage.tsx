@@ -122,7 +122,7 @@ export default function OverviewPage() {
                 <span className="capitalize text-slate-400">{gen.emotion}</span>
                 <span className="uppercase text-slate-400">{gen.language}</span>
                 <span className="text-slate-400">
-                  {token && <AudioPlayer loadSrc={() => playUrl(token, gen.id)} loadKey={gen.id} downloadName={`natiq_${gen.id}.wav`} />}
+                  {token && <AudioPlayer loadSrc={() => Promise.resolve(playUrl(token, gen.id))} loadKey={gen.id} downloadName={`natiq_${gen.id}.wav`} />}
                 </span>
               </div>
             ))}
