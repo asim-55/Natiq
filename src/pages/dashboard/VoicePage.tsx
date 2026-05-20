@@ -107,13 +107,13 @@ export default function VoicePage() {
   const curlBase = apiBase || "https://natiq-five.vercel.app/api";
 
   function buildCurlCommand() {
-    const emotion = effectiveEmotion === "NEUTRAL" ? undefined : effectiveEmotion.toLowerCase();
+    const emotion = effectiveEmotion.toLowerCase();
     const body: Record<string, string> = {
       text: voiceScript,
       language,
+      emotion,
       voice_reference_id: selectedVoiceId || "<your_voice_id>",
     };
-    if (emotion) body.emotion = emotion;
     return `curl -s ${curlBase}/generate-audio-emotion \\
   -H "Authorization: Bearer <YOUR_API_KEY>" \\
   -H "Content-Type: application/json" \\
