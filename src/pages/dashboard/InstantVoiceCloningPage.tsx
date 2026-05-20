@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Mic, Trash2, Upload } from "lucide-react";
+import { Check, Edit2, Mic, Play, Trash2, Upload, X } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { deleteVoice, denoiseAudio, fetchVoices, previewVoiceUrl, uploadVoice } from "../../api/client";
+import { deleteVoice, denoiseAudio, fetchVoices, previewVoiceUrl, updateVoiceName, uploadVoice } from "../../api/client";
 import type { Voice } from "../../types";
 import UpgradeModal from "../../components/UpgradeModal";
 import AudioPlayer from "../../components/AudioPlayer";
@@ -91,6 +91,8 @@ export default function InstantVoiceCloningPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [enableDenoise, setEnableDenoise] = useState(false);
   const [isDenoising, setIsDenoising] = useState(false);
+  const [editingVoiceId, setEditingVoiceId] = useState<string | null>(null);
+  const [editingVoiceName, setEditingVoiceName] = useState("");
 
   // Record metadata
   const [recordName, setRecordName] = useState("");
@@ -489,6 +491,30 @@ export default function InstantVoiceCloningPage() {
     }
   }
 
+  function startEditingVoice(voice: Voice) {
+    setEditingVoiceId(voice.voice_id);
+    setEditingVoiceName(voice.name);
+  }
+
+  function cancelEditingVoice() {
+    setEditingVoiceId(null);
+    setEditingVoiceName("");
+  }
+
+  async function saveVoiceName(voiceId: string) {
+    if (!token || !editingVoiceName.trim()) return;
+    try {
+      await updateVoiceName(token, voiceId, editingVoiceName.trim());
+      setVoices(prev => prev.map(v => 
+        v.voice_id === voiceId ? { ...v, name: editingVoiceName.trim() } : v
+      ));
+      setEditingVoiceId(null);
+      setEditingVoiceName("");
+    } catch (err: any) {
+      setError(err instanceof Error ? err.message : "Update failed");
+    }
+  }
+
   return (
     <>
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} message={upgradeMessage} />
@@ -760,33 +786,83 @@ export default function InstantVoiceCloningPage() {
                 <div className="grid gap-2">
                   {voices.map(voice => (
                     <div key={voice.voice_id}
-                      className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 transition
+                      className={`flex flex-col gap-2 rounded-2xl border px-4 py-3.5 transition
                         ${selectedVoiceId === voice.voice_id
                           ? "border-cyan-300/50 bg-cyan-300/10"
                           : "border-white/10 bg-white/5"}`}
                     >
-                      <button
-                        className="flex flex-1 items-center gap-3 text-left min-w-0"
-                        onClick={() => setSelectedVoiceId(voice.voice_id)}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold text-white truncate">{voice.name}</span>
-                          <span className="mt-0.5 block text-xs text-slate-500">
-                            {new Date(voice.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {selectedVoiceId === voice.voice_id && (
-                          <span className="shrink-0 rounded-full bg-cyan-300/20 px-2 py-0.5 text-xs text-cyan-300">Active</span>
+                      {/* Top row: Name/Edit + Actions */}
+                      <div className="flex items-center gap-2">
+                        {editingVoiceId === voice.voice_id ? (
+                          <div className="flex flex-1 items-center gap-2">
+                            <input
+                              type="text"
+                              value={editingVoiceName}
+                              onChange={(e) => setEditingVoiceName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") saveVoiceName(voice.voice_id);
+                                if (e.key === "Escape") cancelEditingVoice();
+                              }}
+                              className="flex-1 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm text-white focus:border-cyan-300/60 focus:outline-none"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => saveVoiceName(voice.voice_id)}
+                              className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-300/20 text-cyan-300 hover:bg-cyan-300/30 transition"
+                              title="Save"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={cancelEditingVoice}
+                              className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-slate-400 hover:bg-white/20 transition"
+                              title="Cancel"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              className="flex flex-1 items-center gap-3 text-left min-w-0"
+                              onClick={() => setSelectedVoiceId(voice.voice_id)}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <span className="block text-sm font-semibold text-white truncate">{voice.name}</span>
+                                <span className="mt-0.5 block text-xs text-slate-500">
+                                  {new Date(voice.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                              {selectedVoiceId === voice.voice_id && (
+                                <span className="shrink-0 rounded-full bg-cyan-300/20 px-2 py-0.5 text-xs text-cyan-300">Active</span>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => startEditingVoice(voice)}
+                              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-500 hover:bg-white/10 hover:text-cyan-300 transition"
+                              title="Edit name"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVoice(voice.voice_id)}
+                              disabled={deletingId === voice.voice_id}
+                              className="shrink-0 flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-500 hover:bg-red-500/10 hover:border-red-400/30 hover:text-red-400 transition disabled:opacity-40"
+                              title="Delete voice"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
                         )}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteVoice(voice.voice_id)}
-                        disabled={deletingId === voice.voice_id}
-                        className="shrink-0 flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-500 hover:bg-red-500/10 hover:border-red-400/30 hover:text-red-400 transition disabled:opacity-40"
-                        title="Delete voice"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      </div>
+                      
+                      {/* Audio player */}
+                      {token && editingVoiceId !== voice.voice_id && (
+                        <AudioPlayer 
+                          src={previewVoiceUrl(token, voice.voice_id)} 
+                          downloadName={`${voice.name}.wav`} 
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

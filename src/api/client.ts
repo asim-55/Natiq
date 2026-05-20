@@ -128,6 +128,14 @@ export async function deleteVoice(token: string, voiceId: string): Promise<void>
   });
 }
 
+export async function updateVoiceName(token: string, voiceId: string, name: string): Promise<void> {
+  await api<{ status: string }>(`/voices/${encodeURIComponent(voiceId)}`, {
+    method: "PATCH",
+    headers: headers(token),
+    body: JSON.stringify({ name }),
+  });
+}
+
 export function previewVoiceUrl(token: string, voiceId: string): string {
   return `${BASE}/preview-voice/${encodeURIComponent(voiceId)}?token=${encodeURIComponent(token)}`;
 }
