@@ -23,6 +23,7 @@ export default function SignInModal({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const processingOAuth = useRef(false);
   const processedCodes = useRef(new Set<string>());
+  const oauthPopup = useRef<Window | null>(null);
 
   // ---------------------------------------------------------------------------
   // Google Sign-In initialization with hidden button
@@ -108,6 +109,7 @@ export default function SignInModal({ open, onClose }: Props) {
         }
         if (data) {
           loginWithToken(data.access_token, data.refresh_token, data.user, data.is_new);
+          oauthPopup.current = null; // Clear popup reference on success
           onClose();
         }
       } catch (e: any) {
@@ -132,6 +134,12 @@ export default function SignInModal({ open, onClose }: Props) {
     if (open) {
       processedCodes.current.clear();
       processingOAuth.current = false;
+    } else {
+      // Close any open OAuth popup when modal closes
+      if (oauthPopup.current && !oauthPopup.current.closed) {
+        oauthPopup.current.close();
+      }
+      oauthPopup.current = null;
     }
   }, [open]);
 
@@ -143,9 +151,16 @@ export default function SignInModal({ open, onClose }: Props) {
       setError("GitHub OAuth not configured");
       return;
     }
+    
+    // If popup is already open, focus it instead of opening a new one
+    if (oauthPopup.current && !oauthPopup.current.closed) {
+      oauthPopup.current.focus();
+      return;
+    }
+    
     const redirectUri = `${window.location.origin}/auth/callback`;
     const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
-    window.open(url, "github-oauth", "width=500,height=700");
+    oauthPopup.current = window.open(url, "github-oauth", "width=500,height=700");
   }
 
   // ---------------------------------------------------------------------------
@@ -156,6 +171,13 @@ export default function SignInModal({ open, onClose }: Props) {
       setError("Microsoft OAuth not configured");
       return;
     }
+    
+    // If popup is already open, focus it instead of opening a new one
+    if (oauthPopup.current && !oauthPopup.current.closed) {
+      oauthPopup.current.focus();
+      return;
+    }
+    
     const redirectUri = `${window.location.origin}/auth/callback`;
     const url =
       `https://login.microsoftonline.com/common/oauth2/v2.0/authorize` +
@@ -164,7 +186,7 @@ export default function SignInModal({ open, onClose }: Props) {
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=openid%20email%20profile%20User.Read` +
       `&response_mode=query`;
-    window.open(url, "microsoft-oauth", "width=500,height=700");
+    oauthPopup.current = window.open(url, "microsoft-oauth", "width=500,height=700");
   }
 
   // ---------------------------------------------------------------------------
