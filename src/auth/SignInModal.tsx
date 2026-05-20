@@ -75,24 +75,8 @@ export default function SignInModal({ open, onClose }: Props) {
   // ---------------------------------------------------------------------------
   const handleOAuthMessage = useCallback(
     async (event: MessageEvent) => {
-      if (!open) return;
       if (event.origin !== window.location.origin) return;
-      const { provider, code, state, error, error_description: errorDescription } = event.data || {};
-      const expectedState = sessionStorage.getItem("oauth_state") || "";
-      if (!state || !expectedState || state !== expectedState) {
-        setLoading(false);
-        setError("OAuth state validation failed");
-        sessionStorage.removeItem("oauth_state");
-        sessionStorage.removeItem("oauth_provider");
-        return;
-      }
-      if (error) {
-        setLoading(false);
-        setError(errorDescription || error || `${provider || "OAuth"} sign-in failed`);
-        sessionStorage.removeItem("oauth_state");
-        sessionStorage.removeItem("oauth_provider");
-        return;
-      }
+      const { provider, code } = event.data || {};
       if (!provider || !code) return;
 
       // Prevent duplicate processing of the same OAuth code
@@ -107,16 +91,13 @@ export default function SignInModal({ open, onClose }: Props) {
       try {
         let data;
         if (provider === "github") {
-          const redirectUri = `${window.location.origin}/auth/callback`;
-          data = await githubAuth(code, redirectUri);
+          data = await githubAuth(code);
         } else if (provider === "microsoft") {
           const redirectUri = `${window.location.origin}/auth/callback`;
           data = await microsoftAuth(code, redirectUri);
         }
         if (data) {
           loginWithToken(data.access_token, data.refresh_token, data.user, data.is_new);
-          sessionStorage.removeItem("oauth_state");
-          sessionStorage.removeItem("oauth_provider");
           onClose();
         }
       } catch (e: any) {
@@ -129,14 +110,13 @@ export default function SignInModal({ open, onClose }: Props) {
         }, 2000);
       }
     },
-    [loginWithToken, onClose, open]
+    [loginWithToken, onClose]
   );
 
   useEffect(() => {
-    if (!open) return;
     window.addEventListener("message", handleOAuthMessage);
     return () => window.removeEventListener("message", handleOAuthMessage);
-  }, [handleOAuthMessage, open]);
+  }, [handleOAuthMessage]);
 
   // ---------------------------------------------------------------------------
   // GitHub redirect
@@ -146,16 +126,8 @@ export default function SignInModal({ open, onClose }: Props) {
       setError("GitHub OAuth not configured");
       return;
     }
-    sessionStorage.setItem("oauth_provider", "github");
     const redirectUri = `${window.location.origin}/auth/callback`;
-    const state = `github:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-    sessionStorage.setItem("oauth_state", state);
-    const url =
-      `https://github.com/login/oauth/authorize` +
-      `?client_id=${GITHUB_CLIENT_ID}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=user:email` +
-      `&state=${encodeURIComponent(state)}`;
+    const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
     window.open(url, "github-oauth", "width=500,height=700");
   }
 
@@ -167,18 +139,14 @@ export default function SignInModal({ open, onClose }: Props) {
       setError("Microsoft OAuth not configured");
       return;
     }
-    sessionStorage.setItem("oauth_provider", "microsoft");
     const redirectUri = `${window.location.origin}/auth/callback`;
-    const state = `microsoft:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-    sessionStorage.setItem("oauth_state", state);
     const url =
       `https://login.microsoftonline.com/common/oauth2/v2.0/authorize` +
       `?client_id=${MICROSOFT_CLIENT_ID}` +
       `&response_type=code` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=openid%20email%20profile%20User.Read` +
-      `&response_mode=query` +
-      `&state=${encodeURIComponent(state)}`;
+      `&response_mode=query`;
     window.open(url, "microsoft-oauth", "width=500,height=700");
   }
 

@@ -85,7 +85,6 @@ export default function InstantVoiceCloningPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadFileName, setUploadFileName] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
-  const previewUrlRef = useRef("");
   const [error, setError] = useState("");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
@@ -119,7 +118,6 @@ export default function InstantVoiceCloningPage() {
   useEffect(() => () => {
     if (timerRef.current) clearInterval(timerRef.current);
     streamRef.current?.getTracks().forEach(t => t.stop());
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
   }, []);
 
   function fmtTime(s: number) {
@@ -196,8 +194,8 @@ export default function InstantVoiceCloningPage() {
           maxAmplitude = Math.max(maxAmplitude, windowMax);
           
           // A window is "active" if it has significant energy
-          // Speech typically has RMS above 0.02 and peaks above 0.1
-          if (windowRMS > 0.02 && windowMax > 0.1) {
+          // Lowered thresholds to avoid false positives on quiet recordings
+          if (windowRMS > 0.01 && windowMax > 0.05) {
             activeWindows++;
           }
         }
@@ -206,11 +204,11 @@ export default function InstantVoiceCloningPage() {
       const avgRMS = totalRMS / (numWindows * numChannels);
       const activeRatio = activeWindows / (numWindows * numChannels);
       
-      // Detection criteria:
-      // 1. Overall RMS must be above 0.015 (has some energy)
-      // 2. Peak amplitude must be above 0.08 (has significant peaks)
-      // 3. At least 10% of windows should be "active" (has speech-like patterns)
-      const isSilent = avgRMS < 0.015 || maxAmplitude < 0.08 || activeRatio < 0.10;
+      // Detection criteria (relaxed thresholds to reduce false positives):
+      // 1. Overall RMS must be above 0.005 (very low energy threshold)
+      // 2. Peak amplitude must be above 0.03 (allows quieter recordings)
+      // 3. At least 5% of windows should be "active" (allows sparse speech)
+      const isSilent = avgRMS < 0.005 || maxAmplitude < 0.03 || activeRatio < 0.05;
       
       console.log("Audio analysis:", {
         duration: duration.toFixed(2) + "s",
@@ -431,10 +429,7 @@ export default function InstantVoiceCloningPage() {
       
       setPreviewUploadVoiceId(voiceId);
       setUploadFileName(fileName);
-      const nextPreviewUrl = token ? await previewVoiceUrl(token, voiceId) : "";
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = nextPreviewUrl;
-      setPreviewUrl(nextPreviewUrl);
+      setPreviewUrl(token ? previewVoiceUrl(token, voiceId) : "");
       setUploadPhase("preview");
       await loadVoices();
       setSelectedVoiceId(voiceId);
@@ -463,8 +458,6 @@ export default function InstantVoiceCloningPage() {
     setUploadBlob(null);
     setUploadOriginalName("");
     setUploadFileName("");
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-    previewUrlRef.current = "";
     setPreviewUrl("");
     setUploadPhase("idle");
     setError("");
@@ -622,7 +615,7 @@ export default function InstantVoiceCloningPage() {
                           ↺ Record another
                         </button>
                       </div>
-                      <AudioPlayer loadSrc={() => previewVoiceUrl(token, previewVoiceId)} loadKey={previewVoiceId} downloadName={`${recordName || "recording"}.wav`} />
+                      <AudioPlayer src={previewVoiceUrl(token, previewVoiceId)} downloadName={`${recordName || "recording"}.wav`} />
                       <button
                         onClick={handleDoneRecording}
                         className="primary-button w-full justify-center"

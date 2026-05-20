@@ -7,23 +7,6 @@ function headers(token: string): HeadersInit {
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 }
 
-
-async function blobObjectUrl(path: string, token: string, init: RequestInit = {}): Promise<string> {
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: { ...headers(token), ...(init.headers || {}) },
-  });
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({ detail: res.statusText }));
-    const detail = errBody.detail ?? errBody;
-    const err = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
-    (err as any).status = res.status;
-    (err as any).detail = detail;
-    throw err;
-  }
-  return URL.createObjectURL(await res.blob());
-}
-
 async function api<T>(path: string, init: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, init);
   if (!res.ok) {
@@ -43,12 +26,8 @@ export async function googleAuth(credential: string): Promise<AuthResponse> {
   return api("/auth/google", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ credential }) });
 }
 
-export async function githubAuth(code: string, redirectUri: string): Promise<AuthResponse> {
-  return api("/auth/github", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, redirect_uri: redirectUri }),
-  });
+export async function githubAuth(code: string): Promise<AuthResponse> {
+  return api("/auth/github", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
 }
 
 export async function microsoftAuth(code: string, redirectUri: string): Promise<AuthResponse> {
@@ -149,8 +128,8 @@ export async function deleteVoice(token: string, voiceId: string): Promise<void>
   });
 }
 
-export function previewVoiceUrl(token: string, voiceId: string): Promise<string> {
-  return blobObjectUrl(`/preview-voice/${encodeURIComponent(voiceId)}`, token);
+export function previewVoiceUrl(token: string, voiceId: string): string {
+  return `${BASE}/preview-voice/${encodeURIComponent(voiceId)}?token=${encodeURIComponent(token)}`;
 }
 
 // Generations ----------------------------------------------------------------
@@ -177,14 +156,25 @@ export async function generateAudio(
   if (speed !== undefined) body.speed = speed;
   if (volume !== undefined) body.volume = volume;
 
-  return blobObjectUrl(endpoint, token, {
+  const res = await fetch(`${BASE}${endpoint}`, {
     method: "POST",
+    headers: headers(token),
     body: JSON.stringify(body),
   });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ detail: res.statusText }));
+    const detail = errBody.detail ?? errBody;
+    const err = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    (err as any).status = res.status;
+    (err as any).detail = detail;
+    throw err;
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }
 
-export function playUrl(token: string, id: number): Promise<string> {
-  return blobObjectUrl(`/play/${id}`, token);
+export function playUrl(token: string, id: number): string {
+  return `${BASE}/play/${id}?token=${encodeURIComponent(token)}`;
 }
 
 // Emotions -------------------------------------------------------------------
