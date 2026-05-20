@@ -34,8 +34,13 @@ export default function AuthCallbackPage() {
     }
 
     if (code && window.opener) {
+      // Post message to parent window
       window.opener.postMessage({ provider, code }, window.location.origin);
-      window.close();
+      
+      // Close popup immediately to prevent any duplicate messages
+      setTimeout(() => {
+        window.close();
+      }, 100);
     }
   }, []);
 

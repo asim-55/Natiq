@@ -22,6 +22,7 @@ export default function SignInModal({ open, onClose }: Props) {
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const processingOAuth = useRef(false);
+  const processedCodes = useRef(new Set<string>());
 
   // ---------------------------------------------------------------------------
   // Google Sign-In initialization with hidden button
@@ -84,6 +85,15 @@ export default function SignInModal({ open, onClose }: Props) {
         console.log("Already processing OAuth callback, ignoring duplicate");
         return;
       }
+
+      // Check if this specific code has already been processed
+      if (processedCodes.current.has(code)) {
+        console.log("OAuth code already processed, ignoring duplicate:", code.substring(0, 10) + "...");
+        return;
+      }
+
+      // Mark this code as being processed
+      processedCodes.current.add(code);
       processingOAuth.current = true;
 
       setLoading(true);
@@ -102,12 +112,11 @@ export default function SignInModal({ open, onClose }: Props) {
         }
       } catch (e: any) {
         setError(e.detail || `${provider} sign-in failed`);
+        // Remove code from processed set on error so user can retry
+        processedCodes.current.delete(code);
       } finally {
         setLoading(false);
-        // Reset after a delay to allow retries
-        setTimeout(() => {
-          processingOAuth.current = false;
-        }, 2000);
+        processingOAuth.current = false;
       }
     },
     [loginWithToken, onClose]
@@ -117,6 +126,14 @@ export default function SignInModal({ open, onClose }: Props) {
     window.addEventListener("message", handleOAuthMessage);
     return () => window.removeEventListener("message", handleOAuthMessage);
   }, [handleOAuthMessage]);
+
+  // Clear processed codes when modal opens/closes to ensure fresh state
+  useEffect(() => {
+    if (open) {
+      processedCodes.current.clear();
+      processingOAuth.current = false;
+    }
+  }, [open]);
 
   // ---------------------------------------------------------------------------
   // GitHub redirect
