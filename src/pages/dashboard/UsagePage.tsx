@@ -12,9 +12,15 @@ import type { UsageDay } from "../../api/client";
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
+  // Format date from YYYY-MM-DD to readable format
+  const formattedDate = new Date(label + 'T00:00:00').toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric',
+    year: 'numeric'
+  });
   return (
     <div className="rounded-xl border border-white/10 bg-ink-900 px-4 py-3 shadow-xl">
-      <p className="text-xs text-slate-400">{label}</p>
+      <p className="text-xs text-slate-400">{formattedDate}</p>
       <p className="mt-1 text-lg font-bold text-cyan-300">{payload[0].value} <span className="text-xs font-normal text-slate-400">credits</span></p>
     </div>
   );
@@ -93,22 +99,29 @@ function MiniCalendar({
 // ─── Usage chart block ───────────────────────────────────────────────────────
 
 function UsageChart({ data, title }: { data: { date: string; credits: number }[]; title: string }) {
-  // Format dates from YYYY-MM-DD to MM/DD for display
-  const formattedData = data.map(d => ({
-    ...d,
-    date: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
-  }));
+  // Keep original date format for dataKey, use formatter for display
+  const tickFormatter = (value: string) => {
+    const date = new Date(value + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+  };
   
-  // Show only every 5th label to avoid clutter
-  const ticks = formattedData.filter((_, i) => i % 5 === 0).map(d => d.date);
+  // Calculate interval to show reasonable number of ticks
+  const interval = data.length > 15 ? Math.floor(data.length / 10) : data.length > 7 ? 1 : 0;
   
   return (
     <div>
       <p className="mb-3 text-sm font-medium text-slate-300">{title}</p>
       <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={formattedData} barSize={8}>
+        <BarChart data={data} barSize={8}>
           <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.07)" strokeDasharray="4 4" />
-          <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} ticks={ticks} />
+          <XAxis 
+            dataKey="date" 
+            tick={{ fill: "#94a3b8", fontSize: 11 }} 
+            axisLine={false} 
+            tickLine={false} 
+            tickFormatter={tickFormatter}
+            interval={interval}
+          />
           <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} width={36} />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
           <Bar dataKey="credits" fill="#67e8f9" radius={[4, 4, 0, 0]} />
