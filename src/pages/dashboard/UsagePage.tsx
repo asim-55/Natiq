@@ -93,13 +93,20 @@ function MiniCalendar({
 // ─── Usage chart block ───────────────────────────────────────────────────────
 
 function UsageChart({ data, title }: { data: { date: string; credits: number }[]; title: string }) {
+  // Format dates from YYYY-MM-DD to MM/DD for display
+  const formattedData = data.map(d => ({
+    ...d,
+    date: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
+  }));
+  
   // Show only every 5th label to avoid clutter
-  const ticks = data.filter((_, i) => i % 5 === 0).map(d => d.date);
+  const ticks = formattedData.filter((_, i) => i % 5 === 0).map(d => d.date);
+  
   return (
     <div>
       <p className="mb-3 text-sm font-medium text-slate-300">{title}</p>
       <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data} barSize={8}>
+        <BarChart data={formattedData} barSize={8}>
           <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.07)" strokeDasharray="4 4" />
           <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} ticks={ticks} />
           <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} width={36} />
@@ -161,7 +168,8 @@ export default function UsagePage() {
     `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
 
   const inSelectedRange = (item: UsageDay) => {
-    const itemDate = new Date(`${item.date}T00:00:00`);
+    // Date is in YYYY-MM-DD format from database
+    const itemDate = new Date(item.date + 'T00:00:00');
     const start = new Date(dateRange[0]);
     const end = new Date(dateRange[1]);
     start.setHours(0, 0, 0, 0);
