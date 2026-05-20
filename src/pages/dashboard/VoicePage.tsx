@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, Play, ChevronDown } from "lucide-react";
+import { Activity, Play, ChevronDown, Code, Copy, Check as CheckIcon, X } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { fetchVoices, generateAudio } from "../../api/client";
 import type { Voice } from "../../types";
@@ -55,6 +55,8 @@ export default function VoicePage() {
   // Upgrade modal
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
+  const [showApiModal, setShowApiModal] = useState(false);
+  const [curlCopied, setCurlCopied] = useState(false);
 
   // Dropdown states
   const [voiceDropdownOpen, setVoiceDropdownOpen] = useState(false);
@@ -101,6 +103,31 @@ export default function VoicePage() {
     if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
   }, []);
 
+  const apiBase = (import.meta.env.VITE_VOICE_API_BASE_URL || "").replace(/^\/api$/, "");
+  const curlBase = apiBase || "https://natiq-five.vercel.app/api";
+
+  function buildCurlCommand() {
+    const emotion = effectiveEmotion === "NEUTRAL" ? undefined : effectiveEmotion.toLowerCase();
+    const body: Record<string, string> = {
+      text: voiceScript,
+      language,
+      voice_reference_id: selectedVoiceId || "<your_voice_id>",
+    };
+    if (emotion) body.emotion = emotion;
+    return `curl -s ${curlBase}/generate-audio-emotion \\
+  -H "Authorization: Bearer <YOUR_API_KEY>" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(body, null, 2).replace(/'/g, "'\\''")}' \\
+  --output output.wav`;
+  }
+
+  function copyCurl() {
+    navigator.clipboard.writeText(buildCurlCommand()).then(() => {
+      setCurlCopied(true);
+      setTimeout(() => setCurlCopied(false), 2000);
+    });
+  }
+
   const handleGenerate = async () => {
     if (!token) return;
     setIsGenerating(true); setHasResult(false); setError("");
@@ -126,6 +153,74 @@ export default function VoicePage() {
   return (
     <>
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} message={upgradeMessage} />
+
+      {/* API Code Modal */}
+      {showApiModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-ink-900 border border-white/10 shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-300/10 border border-cyan-300/20">
+                  <Code size={18} className="text-cyan-300" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">API Code</h3>
+                  <p className="text-xs text-slate-400">Ready-to-run cURL request with your current settings</p>
+                </div>
+              </div>
+              <button onClick={() => setShowApiModal(false)} className="text-slate-400 hover:text-white transition">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 flex flex-col gap-5">
+              {/* Info pills */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "Language", value: LANGUAGES[language] },
+                  { label: "Emotion", value: effectiveEmotion.charAt(0) + effectiveEmotion.slice(1).toLowerCase() },
+                  { label: "Voice", value: voices.find(v => v.voice_id === selectedVoiceId)?.name || "None" },
+                ].map(pill => (
+                  <span key={pill.label} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs">
+                    <span className="text-slate-500">{pill.label}:</span>
+                    <span className="text-cyan-200 font-medium">{pill.value}</span>
+                  </span>
+                ))}
+              </div>
+
+              {/* API token notice */}
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/5 px-4 py-3">
+                <span className="mt-0.5 text-amber-300">⚠</span>
+                <p className="text-xs text-amber-200 leading-relaxed">
+                  Replace <code className="rounded bg-amber-400/15 px-1.5 py-0.5 font-mono text-amber-300">&lt;YOUR_API_KEY&gt;</code> with a real API key from{" "}
+                  <a href="/dashboard/settings" className="underline font-semibold" onClick={() => setShowApiModal(false)}>Settings → API Keys</a>.
+                </p>
+              </div>
+
+              {/* Code block */}
+              <div className="relative">
+                <pre className="rounded-2xl border border-white/10 bg-black/40 p-5 text-xs text-slate-200 font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap break-all">{buildCurlCommand()}</pre>
+                <button
+                  onClick={copyCurl}
+                  className="absolute top-3 right-3 flex items-center gap-1.5 rounded-xl border border-white/10 bg-ink-900 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition"
+                >
+                  {curlCopied ? <><CheckIcon size={13} className="text-cyan-300" /> Copied!</> : <><Copy size={13} /> Copy</>}
+                </button>
+              </div>
+
+              {/* Close */}
+              <button
+                onClick={() => setShowApiModal(false)}
+                className="self-end rounded-2xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6">
         <section className="dashboard-panel p-5 sm:p-6">
@@ -168,13 +263,23 @@ export default function VoicePage() {
                 )}
               </div>
 
-              <button
-                className="primary-button w-full justify-center"
-                onClick={handleGenerate}
-                disabled={isGenerating || !selectedVoiceId || (isFree && voiceScript.length > FREE_MAX_CHARS)}
-              >
-                {isGenerating ? <><Activity size={18} /> Generating…</> : <><Play size={18} fill="currentColor" /> Generate voice</>}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  className="primary-button flex-1 justify-center"
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !selectedVoiceId || (isFree && voiceScript.length > FREE_MAX_CHARS)}
+                >
+                  {isGenerating ? <><Activity size={18} /> Generating…</> : <><Play size={18} fill="currentColor" /> Generate voice</>}
+                </button>
+                <button
+                  onClick={() => setShowApiModal(true)}
+                  className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition shrink-0"
+                  title="Get API Code"
+                >
+                  <Code size={16} />
+                  <span className="hidden sm:inline">API Code</span>
+                </button>
+              </div>
 
               {/* Speed Control */}
               <div>
