@@ -208,73 +208,128 @@ export default function ResourcePage() {
 
           {/* Featured Articles for Blog */}
           {isBlog && featuredArticles.length > 0 && (
-            <div className="mt-14">
-              <div className="mb-6 flex items-center gap-2">
-                <Sparkles size={20} className="text-cyan-300" />
-                <h2 className="text-xl font-semibold text-white">Featured Articles</h2>
-              </div>
-              <div className="grid gap-6 lg:grid-cols-2">
-                {featuredArticles.map(({title, text, category, readTime, author}) => (
-                  <article key={title} className="group relative overflow-hidden rounded-3xl border border-cyan-300/20 bg-gradient-to-br from-cyan-300/10 to-transparent p-8 transition hover:border-cyan-300/40 hover:shadow-lg hover:shadow-cyan-300/10">
-                    <div className="mb-4 flex items-center gap-3 text-xs">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 font-medium text-cyan-200">
-                        <Tag size={12} />
-                        {category}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-slate-400">
-                        <Clock size={12} />
-                        {readTime}
-                      </span>
-                    </div>
-                    <h3 className="text-2xl font-bold text-white group-hover:text-cyan-100 transition">{title}</h3>
-                    <p className="mt-3 text-base leading-7 text-slate-300">{text}</p>
-                    <div className="mt-6 flex items-center border-t border-white/10 pt-4">
-                      <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <User size={14} />
-                        <span>{author}</span>
+            <div className="mt-16">
+              <div className="grid gap-8 lg:grid-cols-5">
+                {/* Hero Featured Article (Takes 3 columns) */}
+                {featuredArticles[0] && (
+                  <article className="group relative lg:col-span-3 overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-300/5 via-transparent to-blue-500/5 transition hover:border-cyan-300/30 hover:shadow-2xl hover:shadow-cyan-300/10">
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/40 to-transparent opacity-60"></div>
+                    <div className="relative p-10 lg:p-12 min-h-[400px] flex flex-col justify-end">
+                      <div className="mb-6 inline-flex items-center gap-2">
+                        <Sparkles size={18} className="text-cyan-300" />
+                        <span className="text-xs font-bold uppercase tracking-widest text-cyan-300">Featured Article</span>
+                      </div>
+                      <div className="mb-4 flex flex-wrap items-center gap-3">
+                        <span className="rounded-lg bg-cyan-300/20 backdrop-blur-sm border border-cyan-300/30 px-3 py-1.5 text-xs font-bold text-cyan-200">
+                          {featuredArticles[0].category}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-sm text-slate-300">
+                          <Clock size={14} />
+                          {featuredArticles[0].readTime}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-sm text-slate-300">
+                          <User size={14} />
+                          {featuredArticles[0].author}
+                        </span>
+                      </div>
+                      <h3 className="text-3xl lg:text-4xl font-bold text-white leading-tight group-hover:text-cyan-100 transition mb-4">
+                        {featuredArticles[0].title}
+                      </h3>
+                      <p className="text-base lg:text-lg leading-relaxed text-slate-200 max-w-2xl">
+                        {featuredArticles[0].text}
+                      </p>
+                      <div className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 group-hover:gap-3 transition-all">
+                        Read article
+                        <ArrowRight size={16} />
                       </div>
                     </div>
                   </article>
-                ))}
+                )}
+
+                {/* Second Featured Article (Takes 2 columns) */}
+                {featuredArticles[1] && (
+                  <article className="group lg:col-span-2 relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/5 to-transparent transition hover:border-cyan-300/30 hover:shadow-xl hover:shadow-cyan-300/10">
+                    <div className="p-8 h-full flex flex-col">
+                      <div className="mb-5">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-cyan-300/10 border border-cyan-300/20 px-4 py-2 text-xs font-bold text-cyan-200">
+                          <Tag size={12} />
+                          {featuredArticles[1].category}
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-white leading-tight group-hover:text-cyan-100 transition">
+                        {featuredArticles[1].title}
+                      </h3>
+                      <p className="mt-4 text-sm leading-relaxed text-slate-300 flex-grow">
+                        {featuredArticles[1].text}
+                      </p>
+                      <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-xs text-slate-400">
+                          <span className="flex items-center gap-1.5">
+                            <Clock size={12} />
+                            {featuredArticles[1].readTime}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <User size={12} />
+                            {featuredArticles[1].author}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                )}
               </div>
             </div>
           )}
 
           {/* Regular Articles */}
-          <div className={`${isBlog ? 'mt-14' : 'mt-14'}`}>
-            {isBlog && <h2 className="mb-6 text-xl font-semibold text-white">All Articles</h2>}
-            <div className={`grid gap-5 ${isBlog ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
-              {regularArticles.map(({title, text, icon: Icon, category, readTime, author}) => (
-                <article key={title} className={`group soft-card p-6 transition hover:border-cyan-300/30 ${isBlog ? 'hover:shadow-lg hover:shadow-cyan-300/5' : ''}`}>
+          <div className={`${isBlog ? 'mt-16' : 'mt-14'}`}>
+            {isBlog && (
+              <div className="mb-8 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">Latest Articles</h2>
+                <div className="h-px flex-1 ml-6 bg-gradient-to-r from-white/20 to-transparent"></div>
+              </div>
+            )}
+            <div className={`grid gap-6 ${isBlog ? 'md:grid-cols-2 xl:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+              {regularArticles.map(({title, text, icon: Icon, category, readTime, author}, idx) => (
+                <article 
+                  key={title} 
+                  className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] p-7 transition hover:border-cyan-300/40 hover:bg-white/[0.04] hover:shadow-xl hover:shadow-cyan-300/5 ${
+                    isBlog && idx === 0 ? 'md:col-span-2 xl:col-span-1' : ''
+                  }`}
+                >
                   {Icon && (
-                    <div className="mb-4 inline-flex rounded-xl border border-cyan-300/20 bg-cyan-300/10 p-2.5 text-cyan-200">
-                      <Icon size={20} />
+                    <div className="mb-5 inline-flex rounded-xl bg-gradient-to-br from-cyan-300/20 to-cyan-300/5 p-3 text-cyan-300 border border-cyan-300/20">
+                      <Icon size={22} />
                     </div>
                   )}
                   {isBlog && category && (
-                    <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-medium">
-                        <Tag size={10} />
+                    <div className="mb-4">
+                      <span className="inline-block rounded-md bg-white/5 px-3 py-1 text-xs font-semibold text-cyan-200 border border-white/10">
                         {category}
                       </span>
-                      {readTime && (
-                        <span className="flex items-center gap-1">
-                          <Clock size={10} />
-                          {readTime}
-                        </span>
-                      )}
                     </div>
                   )}
-                  <h2 className="text-xl font-semibold text-white group-hover:text-cyan-100 transition">{title}</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
+                  <h2 className="text-xl font-bold text-white leading-snug group-hover:text-cyan-100 transition">
+                    {title}
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                    {text}
+                  </p>
                   {isBlog && (
-                    <div className="mt-4 flex items-center border-t border-white/10 pt-4">
-                      <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <div className="mt-5 pt-5 border-t border-white/10 flex items-center justify-between text-xs text-slate-500">
+                      <span className="flex items-center gap-1.5">
                         <User size={12} />
                         {author}
                       </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock size={12} />
+                        {readTime}
+                      </span>
                     </div>
                   )}
+                  
+                  {/* Hover gradient effect */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-300/0 to-blue-500/0 opacity-0 group-hover:from-cyan-300/5 group-hover:to-blue-500/5 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 </article>
               ))}
             </div>
