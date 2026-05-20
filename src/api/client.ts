@@ -17,6 +17,10 @@ async function api<T>(path: string, init: RequestInit): Promise<T> {
     (err as any).detail = detail;
     throw err;
   }
+  // Handle empty responses (like 204 No Content)
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return undefined as T;
+  }
   return res.json();
 }
 
