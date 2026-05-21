@@ -3,6 +3,7 @@ import { Check, Building2, Rocket, Shield, Zap } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { selectPlan } from "../../api/client";
 import type { PlanName } from "../../types";
+import ContactModal from "../../components/ContactModal";
 
 interface PlanDef {
   id: PlanName;
@@ -63,6 +64,7 @@ export default function SubscriptionPage() {
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [loading, setLoading] = useState<PlanName | null>(null);
   const [message, setMessage] = useState("");
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   // If the user is an org member, billing_owner_id is set — they cannot change plans
   const isOrgMember = !!(user as any)?.billing_owner_id;
@@ -72,7 +74,7 @@ export default function SubscriptionPage() {
   async function handleSelect(planId: PlanName) {
     if (!token) return;
     if (planId === "enterprise") {
-      setMessage("Contact us at sales@paysys.ai for Enterprise pricing.");
+      setContactModalOpen(true);
       return;
     }
     setLoading(planId);
@@ -94,7 +96,9 @@ export default function SubscriptionPage() {
   const creditPct = Math.min(100, Math.round((totalCredits / planMaxCredits) * 100));
 
   return (
-    <div className="grid gap-6">
+    <>
+      <ContactModal open={contactModalOpen} onClose={() => setContactModalOpen(false)} />
+      <div className="grid gap-6">
       {/* ── Credit summary cards ── */}
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Model Credits */}
@@ -260,5 +264,6 @@ export default function SubscriptionPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
