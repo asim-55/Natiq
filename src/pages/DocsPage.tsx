@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, BookOpen, Key, Upload, Mic2, User, Lock, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 
 /* ------------------------------------------------------------------ */
@@ -127,7 +127,7 @@ const endpoints: Endpoint[] = [
     method: "POST",
     path: "/generate-audio-emotion",
     title: "Generate audio with emotion",
-    description: "Generate expressive Roman Urdu speech with one of 23 emotions. Supports Urdu text (both Urdu script and Roman Urdu). Costs 1 credit per 20 characters. Returns WAV audio file.",
+    description: "Generate expressive Roman Urdu speech with one of 23 emotions. Supports Urdu text (both Urdu script and Roman Urdu). Costs 1 credit per 20 characters. Returns WAV audio file. Available on Plus and Pro plans.",
     auth: true,
     body: `{
   "text": "Aaj ka din bohat khoobsurat hai",
@@ -139,6 +139,25 @@ const endpoints: Endpoint[] = [
   -H "Authorization: Bearer <TOKEN>" \\
   -H "Content-Type: application/json" \\
   -d '{"text":"Aaj ka din bohat khoobsurat hai","language":"ur","emotion":"happy","voice_reference_id":"<VOICE_ID>"}' \\
+  --output output.wav`,
+    responseNote: "Returns audio/wav file",
+  },
+  {
+    id: "gen-no-emotion",
+    method: "POST",
+    path: "/generate-audio-no-emotion",
+    title: "Generate audio (neutral)",
+    description: "Generate neutral Roman Urdu speech without emotion tags. Supports 23+ languages including Arabic, English, Hindi, and more. Costs 1 credit per 20 characters. Returns WAV audio file. Available on all plans.",
+    auth: true,
+    body: `{
+  "text": "Welcome to Natiq voice platform",
+  "language": "en",
+  "voice_reference_id": "<VOICE_ID>"
+}`,
+    curl: `curl -s ${BASE}/generate-audio-no-emotion \\
+  -H "Authorization: Bearer <TOKEN>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"text":"Welcome to Natiq voice platform","language":"en","voice_reference_id":"<VOICE_ID>"}' \\
   --output output.wav`,
     responseNote: "Returns audio/wav file",
   },
@@ -177,10 +196,24 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={copy}
-      className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition hover:bg-white/10 hover:text-white"
-      title="Copy"
+      className={`absolute right-3 top-3 flex items-center gap-1.5 h-8 px-3 rounded-lg border text-xs font-medium transition ${
+        copied 
+          ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" 
+          : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+      }`}
+      title={copied ? "Copied!" : "Copy"}
     >
-      {copied ? <Check size={14} /> : <Copy size={14} />}
+      {copied ? (
+        <>
+          <Check size={12} />
+          Copied
+        </>
+      ) : (
+        <>
+          <Copy size={12} />
+          Copy
+        </>
+      )}
     </button>
   );
 }
@@ -188,39 +221,57 @@ function CopyButton({ text }: { text: string }) {
 function EndpointCard({ ep }: { ep: Endpoint }) {
   const [open, setOpen] = useState(false);
   return (
-    <div id={ep.id} className="rounded-3xl border border-white/10 bg-ink-950/70 p-5 scroll-mt-24">
+    <div id={ep.id} className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.02] to-transparent overflow-hidden scroll-mt-24">
       {/* Header */}
       <button
-        className="flex w-full flex-wrap items-center gap-3 text-left"
+        className="flex w-full items-start gap-4 p-5 text-left transition hover:bg-white/[0.02]"
         onClick={() => setOpen(!open)}
       >
-        <span className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${methodColors[ep.method]}`}>
-          {ep.method}
-        </span>
-        <code className="text-sm font-semibold text-white">{ep.path}</code>
-        {ep.auth && (
-          <span className="rounded-full bg-violet-400/15 px-2 py-0.5 text-[10px] font-semibold text-violet-300">
-            AUTH
-          </span>
-        )}
-        <span className="ml-auto text-xs text-slate-500">{open ? "▲" : "▼"}</span>
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className={`rounded-lg border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${methodColors[ep.method]}`}>
+              {ep.method}
+            </span>
+            {ep.auth && (
+              <span className="flex items-center gap-1 rounded-lg bg-violet-400/15 border border-violet-400/20 px-2 py-0.5 text-[10px] font-semibold text-violet-300">
+                <Lock size={10} />
+                AUTH
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-base font-semibold text-white">{ep.title}</h3>
+          </div>
+          <code className="text-sm text-cyan-300 font-mono">{ep.path}</code>
+          <p className="mt-2 text-sm leading-6 text-slate-400">{ep.description}</p>
+        </div>
+        <div className="flex-shrink-0 mt-1">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition">
+            <span className="text-xs">{open ? "▲" : "▼"}</span>
+          </div>
+        </div>
       </button>
-      <p className="mt-2 text-sm leading-6 text-slate-400">{ep.description}</p>
 
       {open && (
-        <div className="mt-4 space-y-4">
+        <div className="border-t border-white/10 bg-black/20 p-5 space-y-5">
           {ep.body && (
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Request body</p>
-              <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-ink-950 p-4 text-xs leading-5 text-cyan-100">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-1 w-1 rounded-full bg-cyan-400"></div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Request Body</p>
+              </div>
+              <pre className="overflow-x-auto rounded-xl border border-white/10 bg-ink-950 p-4 text-xs leading-6 text-cyan-100 font-mono">
                 {ep.body}
               </pre>
             </div>
           )}
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase text-slate-500">curl</p>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-1 w-1 rounded-full bg-cyan-400"></div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">cURL Example</p>
+            </div>
             <div className="relative">
-              <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-ink-950 p-4 pr-12 text-xs leading-5 text-cyan-100">
+              <pre className="overflow-x-auto rounded-xl border border-white/10 bg-ink-950 p-4 pr-14 text-xs leading-6 text-cyan-100 font-mono">
                 {ep.curl}
               </pre>
               <CopyButton text={ep.curl} />
@@ -228,8 +279,11 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
           </div>
           {ep.responseNote && (
             <div>
-              <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Example response</p>
-              <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-ink-950 p-4 text-xs leading-5 text-emerald-200">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-1 w-1 rounded-full bg-emerald-400"></div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Example Response</p>
+              </div>
+              <pre className="overflow-x-auto rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-xs leading-6 text-emerald-200 font-mono">
                 {ep.responseNote}
               </pre>
             </div>
@@ -241,87 +295,182 @@ function EndpointCard({ ep }: { ep: Endpoint }) {
 }
 
 const sections = [
-  { title: "Authentication", ids: ["signup", "login"] },
-  { title: "API Tokens", ids: ["create-token", "list-tokens", "delete-token"] },
-  { title: "Voice Upload", ids: ["upload-voice", "my-voices"] },
-  { title: "Audio Generation", ids: ["gen-emotion"] },
-  { title: "User Profile", ids: ["me"] },
+  { title: "Authentication", ids: ["signup", "login"], icon: Lock },
+  { title: "API Tokens", ids: ["create-token", "list-tokens", "delete-token"], icon: Key },
+  { title: "Voice Upload", ids: ["upload-voice", "my-voices"], icon: Upload },
+  { title: "Audio Generation", ids: ["gen-emotion", "gen-no-emotion"], icon: Mic2 },
+  { title: "User Profile", ids: ["me"], icon: User },
 ];
 
 export default function DocsPage() {
+  const [activeSection, setActiveSection] = useState("signup");
+
   return (
-    <main className="relative z-10 pt-28 pb-20">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <p className="text-sm font-semibold text-cyan-200">API Reference</p>
-        <h1 className="mt-2 text-4xl font-semibold text-white sm:text-5xl">
-          Natiq API Documentation
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-300">
-          Complete REST API reference for Natiq Roman Urdu TTS. Generate expressive, emotionally rich speech with 23 emotion styles. All authenticated endpoints accept either a JWT session token or a long-lived <code className="rounded bg-white/10 px-1.5 text-cyan-200">psk_</code> API token via the <code className="rounded bg-white/10 px-1.5 text-cyan-200">Authorization: Bearer</code> header.
-        </p>
+    <main className="relative z-10 pt-20 pb-20 min-h-screen">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-[280px_1fr] gap-8">
+          
+          {/* Sidebar Navigation */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-24 space-y-6">
+              {/* Header */}
+              <div className="pb-4 border-b border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-8 w-8 rounded-lg bg-cyan-400/10 flex items-center justify-center">
+                    <BookOpen size={16} className="text-cyan-300" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-white">API Docs</h2>
+                </div>
+                <p className="text-xs text-slate-400">Complete REST API reference</p>
+              </div>
 
-        {/* Quick-start box */}
-        <div className="mt-8 rounded-3xl border border-cyan-300/20 bg-cyan-300/5 p-5">
-          <p className="text-sm font-semibold text-white">Quick start — Getting started</p>
-          <ol className="mt-3 list-inside list-decimal space-y-1 text-sm leading-6 text-slate-300">
-            <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /auth/signup</code> — create account, receive 500 free credits</li>
-            <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /auth/api-tokens</code> — create a <code className="text-cyan-200">psk_</code> token for programmatic access</li>
-            <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /upload-voice</code> — upload a voice reference (10-30s audio), get <code className="text-cyan-200">voice_id</code></li>
-            <li><code className="rounded bg-white/10 px-1 text-cyan-200">POST /generate-audio-emotion</code> — generate Roman Urdu speech with emotion (1 credit per 20 characters)</li>
-            <li><code className="rounded bg-white/10 px-1 text-cyan-200">GET /me</code> — check your remaining credits and profile</li>
-          </ol>
-        </div>
+              {/* Navigation Links */}
+              <nav className="space-y-1">
+                {sections.map((section) => {
+                  const Icon = section.icon;
+                  const isActive = section.ids.includes(activeSection);
+                  return (
+                    <div key={section.title}>
+                      <a
+                        href={`#${section.ids[0]}`}
+                        onClick={() => setActiveSection(section.ids[0])}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                          isActive 
+                            ? "bg-cyan-400/10 text-cyan-300" 
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <Icon size={16} />
+                        {section.title}
+                      </a>
+                      {isActive && (
+                        <div className="ml-9 mt-1 space-y-1">
+                          {section.ids.map((id) => {
+                            const ep = endpoints.find((e) => e.id === id);
+                            return ep ? (
+                              <a
+                                key={id}
+                                href={`#${id}`}
+                                className="block px-3 py-1.5 text-xs text-slate-500 hover:text-cyan-300 transition"
+                              >
+                                {ep.title}
+                              </a>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </nav>
 
-        {/* Emotion Support */}
-        <div className="mt-6 rounded-3xl border border-violet-300/20 bg-violet-300/5 p-5">
-          <p className="text-sm font-semibold text-white">23 Supported Emotions</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {["neutral", "happy", "sad", "angry", "excited", "calm", "serious", "romantic", "dramatic", "funny", "fearful", "surprised", "confused", "disappointed", "hopeful", "motivational", "whisper", "sarcastic", "narrative", "empathetic", "formal", "casual", "poetic"].map(emotion => (
-              <span key={emotion} className="rounded-full bg-violet-400/15 px-2.5 py-1 text-xs font-medium text-violet-200">
-                {emotion}
-              </span>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-slate-400">
-            Use <code className="rounded bg-white/10 px-1 text-cyan-200">GET /emotions</code> to programmatically fetch the list.
-          </p>
-        </div>
+              {/* Quick Links */}
+              <div className="pt-4 border-t border-white/10">
+                <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Quick Links</p>
+                <div className="space-y-1">
+                  <Link to="/dashboard/settings" className="block px-3 py-1.5 text-xs text-slate-400 hover:text-cyan-300 transition">
+                    Get API Key
+                  </Link>
+                  <Link to="/dashboard/voice" className="block px-3 py-1.5 text-xs text-slate-400 hover:text-cyan-300 transition">
+                    Try Playground
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </aside>
 
-        {/* TOC */}
-        <nav className="mt-8 flex flex-wrap gap-2">
-          {sections.map((s) => (
-            <a
-              key={s.title}
-              href={`#${s.ids[0]}`}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white"
-            >
-              {s.title}
-            </a>
-          ))}
-        </nav>
+          {/* Main Content */}
+          <div className="max-w-4xl">
+            {/* Hero Header */}
+            <div className="mb-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
+                <Zap size={12} className="text-cyan-300" />
+                <span className="text-xs font-semibold text-cyan-300">API Reference</span>
+              </div>
+              <h1 className="text-4xl font-bold text-white sm:text-5xl mb-4">
+                Natiq API Documentation
+              </h1>
+              <p className="text-lg leading-8 text-slate-300 max-w-3xl">
+                Generate expressive Roman Urdu speech with 23 emotion styles. All authenticated endpoints accept either a JWT session token or a long-lived <code className="rounded bg-white/10 px-1.5 py-0.5 text-cyan-200">psk_</code> API token.
+              </p>
+            </div>
 
-        {/* Endpoint sections */}
-        {sections.map((s) => (
-          <div key={s.title} className="mt-10">
-            <h2 className="text-lg font-semibold text-white">{s.title}</h2>
-            <div className="mt-4 space-y-4">
-              {s.ids.map((id) => {
-                const ep = endpoints.find((e) => e.id === id);
-                return ep ? <EndpointCard key={id} ep={ep} /> : null;
-              })}
+            {/* Getting Started Card */}
+            <div className="mb-8 rounded-3xl border border-cyan-300/20 bg-gradient-to-br from-cyan-400/5 to-cyan-400/0 p-6">
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 rounded-xl bg-cyan-400/10 flex items-center justify-center flex-shrink-0">
+                  <Zap size={20} className="text-cyan-300" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-semibold text-white mb-3">Quick Start Guide</h3>
+                  <ol className="space-y-2 text-sm text-slate-300">
+                    <li className="flex items-start gap-3">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-bold text-cyan-300 flex-shrink-0">1</span>
+                      <span><code className="text-cyan-300">POST /auth/signup</code> — Create account, receive 500 free credits</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-bold text-cyan-300 flex-shrink-0">2</span>
+                      <span><code className="text-cyan-300">POST /auth/api-tokens</code> — Generate your API key</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-bold text-cyan-300 flex-shrink-0">3</span>
+                      <span><code className="text-cyan-300">POST /upload-voice</code> — Upload 10-30s voice reference</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-bold text-cyan-300 flex-shrink-0">4</span>
+                      <span><code className="text-cyan-300">POST /generate-audio-emotion</code> — Generate speech with emotion</span>
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            {/* Emotions Card */}
+            <div className="mb-12 rounded-3xl border border-violet-300/20 bg-gradient-to-br from-violet-400/5 to-violet-400/0 p-6">
+              <h3 className="text-base font-semibold text-white mb-3">23 Supported Emotions</h3>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {["neutral", "happy", "sad", "angry", "excited", "calm", "serious", "romantic", "dramatic", "funny", "fearful", "surprised", "confused", "disappointed", "hopeful", "motivational", "whisper", "sarcastic", "narrative", "empathetic", "formal", "casual", "poetic"].map(emotion => (
+                  <span key={emotion} className="rounded-lg bg-violet-400/15 px-2.5 py-1 text-xs font-medium text-violet-200 border border-violet-400/20">
+                    {emotion}
+                  </span>
+                ))}
+              </div>
+              <p className="text-xs text-slate-400">
+                All emotions available on Plus and Pro plans. Free plan supports neutral only.
+              </p>
+            </div>
+
+            {/* Endpoint Sections */}
+            {sections.map((section) => {
+              const Icon = section.icon;
+              return (
+                <div key={section.title} id={section.ids[0]} className="mb-12 scroll-mt-24">
+                  <div className="flex items-center gap-3 mb-6 pb-3 border-b border-white/10">
+                    <div className="h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center">
+                      <Icon size={18} className="text-cyan-300" />
+                    </div>
+                    <h2 className="text-2xl font-semibold text-white">{section.title}</h2>
+                  </div>
+                  <div className="space-y-6">
+                    {section.ids.map((id) => {
+                      const ep = endpoints.find((e) => e.id === id);
+                      return ep ? <EndpointCard key={id} ep={ep} /> : null;
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Footer */}
+            <div className="mt-16 pt-8 border-t border-white/10 text-center">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-sm font-medium text-cyan-200 hover:text-white transition"
+              >
+                ← Back to home
+              </Link>
             </div>
           </div>
-        ))}
-
-        {/* Back link */}
-        <div className="mt-12 text-center">
-          <Link
-            to="/"
-            className="text-sm font-medium text-cyan-200 transition hover:text-white"
-          >
-            ← Back to home
-          </Link>
         </div>
       </div>
     </main>
