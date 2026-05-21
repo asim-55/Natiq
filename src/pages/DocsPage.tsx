@@ -127,18 +127,20 @@ const endpoints: Endpoint[] = [
     method: "POST",
     path: "/generate-audio-emotion",
     title: "Generate audio with emotion",
-    description: "Generate expressive Roman Urdu speech with one of 23 emotions. Supports Urdu text (both Urdu script and Roman Urdu). Costs 1 credit per 20 characters. Returns WAV audio file. Available on Plus and Pro plans.",
+    description: "Generate expressive Roman Urdu speech with one of 23 emotions. Supports Urdu text (both Urdu script and Roman Urdu). Costs 1 credit per 20 characters. Returns WAV audio file. Available on Plus and Pro plans. Optional: speed (0.5-2.0, default 1.0) and volume (0.0-2.0, default 1.0).",
     auth: true,
     body: `{
   "text": "Aaj ka din bohat khoobsurat hai",
   "language": "ur",
   "emotion": "happy",
-  "voice_reference_id": "<VOICE_ID>"
+  "voice_reference_id": "<VOICE_ID>",
+  "speed": 1.0,
+  "volume": 1.0
 }`,
     curl: `curl -s ${BASE}/generate-audio-emotion \\
   -H "Authorization: Bearer <TOKEN>" \\
   -H "Content-Type: application/json" \\
-  -d '{"text":"Aaj ka din bohat khoobsurat hai","language":"ur","emotion":"happy","voice_reference_id":"<VOICE_ID>"}' \\
+  -d '{"text":"Aaj ka din bohat khoobsurat hai","language":"ur","emotion":"happy","voice_reference_id":"<VOICE_ID>","speed":1.0,"volume":1.0}' \\
   --output output.wav`,
     responseNote: "Returns audio/wav file",
   },
@@ -147,17 +149,19 @@ const endpoints: Endpoint[] = [
     method: "POST",
     path: "/generate-audio-no-emotion",
     title: "Generate audio (neutral)",
-    description: "Generate neutral Roman Urdu speech without emotion tags. Supports 23+ languages including Arabic, English, Hindi, and more. Costs 1 credit per 20 characters. Returns WAV audio file. Available on all plans.",
+    description: "Generate neutral Roman Urdu speech without emotion tags. Supports 23+ languages including Arabic, English, Hindi, and more. Costs 1 credit per 20 characters. Returns WAV audio file. Available on all plans. Optional: speed (0.5-2.0, default 1.0) and volume (0.0-2.0, default 1.0).",
     auth: true,
     body: `{
   "text": "Welcome to Natiq voice platform",
   "language": "en",
-  "voice_reference_id": "<VOICE_ID>"
+  "voice_reference_id": "<VOICE_ID>",
+  "speed": 1.0,
+  "volume": 1.0
 }`,
     curl: `curl -s ${BASE}/generate-audio-no-emotion \\
   -H "Authorization: Bearer <TOKEN>" \\
   -H "Content-Type: application/json" \\
-  -d '{"text":"Welcome to Natiq voice platform","language":"en","voice_reference_id":"<VOICE_ID>"}' \\
+  -d '{"text":"Welcome to Natiq voice platform","language":"en","voice_reference_id":"<VOICE_ID>","speed":1.0,"volume":1.0}' \\
   --output output.wav`,
     responseNote: "Returns audio/wav file",
   },

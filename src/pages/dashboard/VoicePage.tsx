@@ -111,10 +111,12 @@ export default function VoicePage() {
     const isNeutral = emotion === "neutral";
     const endpoint = isNeutral ? "/generate-audio-no-emotion" : "/generate-audio-emotion";
     
-    const body: Record<string, string> = {
+    const body: Record<string, string | number> = {
       text: voiceScript,
       language,
       voice_reference_id: selectedVoiceId || "<your_voice_id>",
+      speed,
+      volume,
     };
     
     // Only include emotion field for non-neutral emotions
