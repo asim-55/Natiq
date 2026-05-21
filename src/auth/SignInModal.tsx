@@ -113,17 +113,24 @@ export default function SignInModal({ open, onClose }: Props) {
         if (data) {
           loginWithToken(data.access_token, data.refresh_token, data.user, data.is_new);
           oauthPopup.current = null; // Clear popup reference on success
-          onClose();
           console.log(`[OAuth] ${provider} authentication successful`);
+          
+          // Close modal and reset flags AFTER successful login
+          onClose();
+          globalProcessingOAuth = false;
+          setLoading(false);
+        } else {
+          // No data returned - reset flags
+          globalProcessingOAuth = false;
+          setLoading(false);
         }
       } catch (e: any) {
         console.error(`[OAuth] ${provider} authentication failed:`, e);
         setError(e.detail || `${provider} sign-in failed`);
         // Remove code from processed set on error so user can retry
         globalProcessingCodes.delete(code);
-      } finally {
-        setLoading(false);
         globalProcessingOAuth = false;
+        setLoading(false);
       }
     },
     [loginWithToken, onClose]
