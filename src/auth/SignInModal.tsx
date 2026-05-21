@@ -7,6 +7,10 @@ const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || "";
 const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || "";
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
+// Global singleton to prevent duplicate OAuth processing across all component instances
+const globalProcessingCodes = new Set<string>();
+let globalProcessingOAuth = false;
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -21,8 +25,6 @@ export default function SignInModal({ open, onClose }: Props) {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
-  const processingOAuth = useRef(false);
-  const processedCodes = useRef(new Set<string>());
   const oauthPopup = useRef<Window | null>(null);
 
   // ---------------------------------------------------------------------------
@@ -81,21 +83,22 @@ export default function SignInModal({ open, onClose }: Props) {
       const { provider, code } = event.data || {};
       if (!provider || !code) return;
 
-      // Prevent duplicate processing of the same OAuth code
-      if (processingOAuth.current) {
-        console.log("Already processing OAuth callback, ignoring duplicate");
+      // Global duplicate prevention - works across all component instances/renders
+      if (globalProcessingOAuth) {
+        console.log("[OAuth] Already processing OAuth callback globally, ignoring duplicate");
         return;
       }
 
-      // Check if this specific code has already been processed
-      if (processedCodes.current.has(code)) {
-        console.log("OAuth code already processed, ignoring duplicate:", code.substring(0, 10) + "...");
+      if (globalProcessingCodes.has(code)) {
+        console.log("[OAuth] Code already processed globally:", code.substring(0, 10) + "...");
         return;
       }
 
-      // Mark this code as being processed
-      processedCodes.current.add(code);
-      processingOAuth.current = true;
+      // Mark this code as being processed IMMEDIATELY
+      globalProcessingCodes.add(code);
+      globalProcessingOAuth = true;
+
+      console.log(`[OAuth] Processing ${provider} OAuth callback with code:`, code.substring(0, 10) + "...");
 
       setLoading(true);
       setError("");
@@ -111,14 +114,16 @@ export default function SignInModal({ open, onClose }: Props) {
           loginWithToken(data.access_token, data.refresh_token, data.user, data.is_new);
           oauthPopup.current = null; // Clear popup reference on success
           onClose();
+          console.log(`[OAuth] ${provider} authentication successful`);
         }
       } catch (e: any) {
+        console.error(`[OAuth] ${provider} authentication failed:`, e);
         setError(e.detail || `${provider} sign-in failed`);
         // Remove code from processed set on error so user can retry
-        processedCodes.current.delete(code);
+        globalProcessingCodes.delete(code);
       } finally {
         setLoading(false);
-        processingOAuth.current = false;
+        globalProcessingOAuth = false;
       }
     },
     [loginWithToken, onClose]
@@ -132,8 +137,8 @@ export default function SignInModal({ open, onClose }: Props) {
   // Clear processed codes when modal opens/closes to ensure fresh state
   useEffect(() => {
     if (open) {
-      processedCodes.current.clear();
-      processingOAuth.current = false;
+      globalProcessingCodes.clear();
+      globalProcessingOAuth = false;
     } else {
       // Close any open OAuth popup when modal closes
       if (oauthPopup.current && !oauthPopup.current.closed) {

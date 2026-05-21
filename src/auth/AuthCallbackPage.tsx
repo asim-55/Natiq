@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
 
+// Global flag to prevent duplicate postMessage across all renders/instances
+let hasPostedGlobally = false;
+
 /**
  * OAuth callback page — opened in a popup by SignInModal.
  * Captures the authorization code from the URL and posts it back to the opener.
@@ -8,9 +11,13 @@ export default function AuthCallbackPage() {
   const hasPosted = useRef(false);
 
   useEffect(() => {
-    // Prevent double execution in React StrictMode
-    if (hasPosted.current) return;
+    // Prevent double execution in React StrictMode (both local and global guards)
+    if (hasPosted.current || hasPostedGlobally) {
+      console.log("[AuthCallback] Already posted message, skipping duplicate");
+      return;
+    }
     hasPosted.current = true;
+    hasPostedGlobally = true;
 
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
@@ -34,6 +41,8 @@ export default function AuthCallbackPage() {
     }
 
     if (code && window.opener) {
+      console.log(`[AuthCallback] Posting ${provider} OAuth code to parent:`, code.substring(0, 10) + "...");
+      
       // Post message to parent window
       window.opener.postMessage({ provider, code }, window.location.origin);
       
@@ -41,6 +50,8 @@ export default function AuthCallbackPage() {
       setTimeout(() => {
         window.close();
       }, 100);
+    } else {
+      console.error("[AuthCallback] Missing code or opener window");
     }
   }, []);
 
