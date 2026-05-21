@@ -3,6 +3,7 @@ import { Check, Crown, Rocket, Shield, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import SignInModal from "../auth/SignInModal";
+import ContactModal from "../components/ContactModal";
 import PricingCalculator from "../components/PricingCalculator";
 
 interface PlanCard {
@@ -83,8 +84,14 @@ export default function PricingPage() {
   const navigate = useNavigate();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [modalOpen, setModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
-  const handleGetStarted = () => {
+  const handleGetStarted = (planLabel: string) => {
+    if (planLabel === "Enterprise") {
+      setContactModalOpen(true);
+      return;
+    }
+    
     if (user) {
       navigate("/dashboard/overview");
     } else {
@@ -95,6 +102,7 @@ export default function PricingPage() {
   return (
     <>
       <SignInModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <ContactModal open={contactModalOpen} onClose={() => setContactModalOpen(false)} />
       <main className="relative z-10 pt-28 pb-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -182,7 +190,7 @@ export default function PricingPage() {
                 </ul>
 
                 <button
-                  onClick={handleGetStarted}
+                  onClick={() => handleGetStarted(plan.label)}
                   className={`mt-5 w-full rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                     plan.highlight
                       ? "bg-cyan-300 text-ink-950 hover:bg-cyan-200"
