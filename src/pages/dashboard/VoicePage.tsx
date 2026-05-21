@@ -108,13 +108,21 @@ export default function VoicePage() {
 
   function buildCurlCommand() {
     const emotion = effectiveEmotion.toLowerCase();
+    const isNeutral = emotion === "neutral";
+    const endpoint = isNeutral ? "/generate-audio-no-emotion" : "/generate-audio-emotion";
+    
     const body: Record<string, string> = {
       text: voiceScript,
       language,
-      emotion,
       voice_reference_id: selectedVoiceId || "<your_voice_id>",
     };
-    return `curl -s ${curlBase}/generate-audio-emotion \\
+    
+    // Only include emotion field for non-neutral emotions
+    if (!isNeutral) {
+      body.emotion = emotion;
+    }
+    
+    return `curl -s ${curlBase}${endpoint} \\
   -H "Authorization: Bearer <YOUR_API_KEY>" \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(body, null, 2).replace(/'/g, "'\\''")}' \\
