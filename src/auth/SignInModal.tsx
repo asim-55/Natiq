@@ -26,6 +26,12 @@ export default function SignInModal({ open, onClose }: Props) {
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const oauthPopup = useRef<Window | null>(null);
+  const onCloseRef = useRef(onClose);
+  
+  // Keep onClose ref up to date to avoid stale closures in StrictMode
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   // ---------------------------------------------------------------------------
   // Google Sign-In initialization with hidden button
@@ -41,7 +47,7 @@ export default function SignInModal({ open, onClose }: Props) {
             try {
               const data = await googleAuth(resp.credential);
               loginWithToken(data.access_token, data.refresh_token, data.user, data.is_new);
-              onClose();
+              onCloseRef.current();
             } catch (e: any) {
               setError(e.detail || "Google sign-in failed");
             }
@@ -83,22 +89,19 @@ export default function SignInModal({ open, onClose }: Props) {
       const { provider, code } = event.data || {};
       if (!provider || !code) return;
 
-      // Global duplicate prevention - works across all component instances/renders
-      if (globalProcessingOAuth) {
-        console.log("[OAuth] Already processing OAuth callback globally, ignoring duplicate");
+      console.log(`[OAuth] Message received - Provider: ${provider}, Code: ${code.substring(0, 10)}..., GlobalFlag: ${globalProcessingOAuth}`);
+
+      // Atomic check-and-set to prevent race conditions
+      if (globalProcessingOAuth || globalProcessingCodes.has(code)) {
+        console.log("[OAuth] Duplicate detected - already processing or code already used");
         return;
       }
 
-      if (globalProcessingCodes.has(code)) {
-        console.log("[OAuth] Code already processed globally:", code.substring(0, 10) + "...");
-        return;
-      }
-
-      // Mark this code as being processed IMMEDIATELY
+      // Mark BOTH as being processed IMMEDIATELY (before any async operations)
       globalProcessingCodes.add(code);
       globalProcessingOAuth = true;
 
-      console.log(`[OAuth] Processing ${provider} OAuth callback with code:`, code.substring(0, 10) + "...");
+      console.log(`[OAuth] Starting ${provider} authentication...`);
 
       setLoading(true);
       setError("");
@@ -111,29 +114,39 @@ export default function SignInModal({ open, onClose }: Props) {
           data = await microsoftAuth(code, redirectUri);
         }
         if (data) {
+          console.log(`[OAuth] ${provider} authentication successful - calling loginWithToken`);
           loginWithToken(data.access_token, data.refresh_token, data.user, data.is_new);
-          oauthPopup.current = null; // Clear popup reference on success
-          console.log(`[OAuth] ${provider} authentication successful`);
           
-          // Close modal and reset flags AFTER successful login
-          onClose();
-          globalProcessingOAuth = false;
+          // Close the popup window
+          if (oauthPopup.current && !oauthPopup.current.closed) {
+            oauthPopup.current.close();
+          }
+          oauthPopup.current = null;
+          
+          // Close modal - DO NOT reset globalProcessingOAuth here
+          // It will be reset when modal opens again
           setLoading(false);
+          
+          // Use setTimeout to ensure loginWithToken completes first
+          setTimeout(() => {
+            console.log("[OAuth] Closing modal...");
+            onCloseRef.current();
+          }, 100);
         } else {
-          // No data returned - reset flags
+          console.log(`[OAuth] No data returned from ${provider}`);
           globalProcessingOAuth = false;
           setLoading(false);
         }
       } catch (e: any) {
         console.error(`[OAuth] ${provider} authentication failed:`, e);
         setError(e.detail || `${provider} sign-in failed`);
-        // Remove code from processed set on error so user can retry
+        // Only reset on error so user can retry
         globalProcessingCodes.delete(code);
         globalProcessingOAuth = false;
         setLoading(false);
       }
     },
-    [loginWithToken, onClose]
+    [loginWithToken]
   );
 
   useEffect(() => {
@@ -220,7 +233,7 @@ export default function SignInModal({ open, onClose }: Props) {
           ? await signup(email, password, name)
           : await login(email, password);
       loginWithToken(data.access_token, data.refresh_token, data.user, data.is_new);
-      onClose();
+      onCloseRef.current();
     } catch (e: any) {
       setError(e.detail || "Authentication failed");
     } finally {
@@ -235,7 +248,7 @@ export default function SignInModal({ open, onClose }: Props) {
       <div className="relative w-full max-w-md rounded-2xl bg-gray-900 p-8 shadow-xl border border-gray-700">
         {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={() => onCloseRef.current()}
           className="absolute top-4 right-4 text-gray-400 hover:text-white"
         >
           <X size={20} />
