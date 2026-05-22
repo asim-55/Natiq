@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, Crown, Rocket, Shield, Zap } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { selectPlan } from "../../api/client";
+import { selectPlan, createCheckoutSession } from "../../api/client";
 import { useNavigate } from "react-router-dom";
 import type { PlanName } from "../../types";
 
@@ -87,20 +87,43 @@ export default function SelectPlanPage() {
     if (!token) return;
     setLoading(plan);
     try {
-      const res = await selectPlan(token, plan);
-      if (res.applied) {
-        await refreshUser();
-        clearIsNew();
-        navigate("/dashboard/overview");
-      } else {
+      if (plan === "free") {
+        // Free plan activates instantly
+        const res = await selectPlan(token, plan);
+        if (res.applied) {
+          await refreshUser();
+          clearIsNew();
+          navigate("/dashboard/overview");
+        }
+      } else if (plan === "enterprise") {
         // Enterprise — contact us
         clearIsNew();
         navigate("/dashboard/overview");
+      } else {
+        // Paid plans — redirect to Stripe Checkout
+        const res = await createCheckoutSession(token, plan, "monthly");
+        if (res.checkout_url) {
+          window.location.href = res.checkout_url;
+          return; // don't setLoading(null) — user is leaving the page
+        }
       }
-    } catch {
-      // fallback — just go to dashboard
-      clearIsNew();
-      navigate("/dashboard/overview");
+    } catch (e: any) {
+      console.error("Plan selection error:", e);
+      // If Stripe not configured, fall back to instant activation for testing
+      if (e.status === 503 || e.status === 400) {
+        try {
+          await selectPlan(token, plan);
+          await refreshUser();
+          clearIsNew();
+          navigate("/dashboard/overview");
+        } catch {
+          clearIsNew();
+          navigate("/dashboard/overview");
+        }
+      } else {
+        clearIsNew();
+        navigate("/dashboard/overview");
+      }
     } finally {
       setLoading(null);
     }
@@ -180,7 +203,7 @@ export default function SelectPlanPage() {
         </div>
 
         <p className="mt-8 text-center text-xs text-slate-500">
-          No payment required for now. All plans are activated instantly for testing.
+          Paid plans are processed securely via Stripe. Free plan activates instantly.
         </p>
       </div>
     </div>

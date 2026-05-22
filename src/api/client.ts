@@ -238,6 +238,13 @@ export async function selectPlan(token: string, plan: PlanName) {
   );
 }
 
+export async function createCheckoutSession(token: string, plan: PlanName, billing: "monthly" | "annual" = "monthly") {
+  return api<{ status: string; checkout_url: string }>(
+    "/create-checkout-session",
+    { method: "POST", headers: headers(token), body: JSON.stringify({ plan, billing }) },
+  );
+}
+
 export async function fetchPlans() {
   return api<{ plans: Record<string, PlanConfig> }>("/plans", { method: "GET", headers: { "Content-Type": "application/json" } });
 }

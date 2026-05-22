@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Building2, Rocket, Shield, Zap } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { selectPlan } from "../../api/client";
+import { selectPlan, createCheckoutSession } from "../../api/client";
+import { useSearchParams } from "react-router-dom";
 import type { PlanName } from "../../types";
 import ContactModal from "../../components/ContactModal";
 
@@ -65,11 +66,35 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState<PlanName | null>(null);
   const [message, setMessage] = useState("");
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // If the user is an org member, billing_owner_id is set — they cannot change plans
   const isOrgMember = !!(user as any)?.billing_owner_id;
 
   const currentPlan = user?.plan ?? "free";
+
+  // Handle Stripe checkout return
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    if (checkout === "success") {
+      setMessage("Payment successful! Your plan is being activated...");
+      // Refresh user to pick up plan change from webhook
+      const poll = async () => {
+        for (let i = 0; i < 10; i++) {
+          await refreshUser();
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      };
+      poll();
+      // Clear the query param
+      searchParams.delete("checkout");
+      setSearchParams(searchParams, { replace: true });
+    } else if (checkout === "cancel") {
+      setMessage("Checkout was cancelled. You can try again anytime.");
+      searchParams.delete("checkout");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSelect(planId: PlanName) {
     if (!token) return;
@@ -79,11 +104,32 @@ export default function SubscriptionPage() {
     }
     setLoading(planId);
     try {
-      await selectPlan(token, planId);
-      await refreshUser();
-      setMessage(`Plan updated to ${planId}!`);
+      if (planId === "free") {
+        // Free plan activates instantly
+        await selectPlan(token, planId);
+        await refreshUser();
+        setMessage("Plan updated to Free!");
+      } else {
+        // Paid plans — redirect to Stripe Checkout
+        const res = await createCheckoutSession(token, planId, billing);
+        if (res.checkout_url) {
+          window.location.href = res.checkout_url;
+          return;
+        }
+      }
     } catch (e: any) {
-      setMessage(e.detail || "Failed to update plan");
+      // If Stripe not configured (503), fall back to instant activation for testing
+      if (e.status === 503 || e.status === 400) {
+        try {
+          await selectPlan(token, planId);
+          await refreshUser();
+          setMessage(`Plan updated to ${planId} (test mode)!`);
+        } catch (e2: any) {
+          setMessage(e2.detail || "Failed to update plan");
+        }
+      } else {
+        setMessage(e.detail || "Failed to update plan");
+      }
     } finally {
       setLoading(null);
     }
