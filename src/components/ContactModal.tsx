@@ -11,7 +11,8 @@ export default function ContactModal({ open, onClose }: Props) {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
-  const [message, setMessage] = useState("");
+  const [numberOfUsers, setNumberOfUsers] = useState("");
+  const [useCase, setUseCase] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -31,7 +32,8 @@ export default function ContactModal({ open, onClose }: Props) {
           last_name: lastName,
           email,
           company,
-          message: message || undefined,
+          number_of_users: numberOfUsers || undefined,
+          use_case: useCase || undefined,
         }),
       });
 
@@ -48,7 +50,8 @@ export default function ContactModal({ open, onClose }: Props) {
         setLastName("");
         setEmail("");
         setCompany("");
-        setMessage("");
+        setNumberOfUsers("");
+        setUseCase("");
         setSuccess(false);
       }, 2000);
     } catch (err: any) {
@@ -152,13 +155,28 @@ export default function ContactModal({ open, onClose }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-white mb-2">
-              Message (optional)
+              Number of users<span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={numberOfUsers}
+              onChange={(e) => setNumberOfUsers(e.target.value)}
+              required
+              placeholder="e.g., 10-50, 100+, 500"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/20"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Use case<span className="text-red-400">*</span>
             </label>
             <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              value={useCase}
+              onChange={(e) => setUseCase(e.target.value)}
+              required
               rows={3}
-              placeholder="Tell us about your use case..."
+              placeholder="Describe how you plan to use Natiq..."
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/20 resize-none"
             />
           </div>
