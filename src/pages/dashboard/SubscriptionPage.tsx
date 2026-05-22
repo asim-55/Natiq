@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Building2, Rocket, Shield, Zap } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { selectPlan, createCheckoutSession } from "../../api/client";
+import { selectPlan, createCheckoutSession, confirmCheckoutSession } from "../../api/client";
 import { useSearchParams } from "react-router-dom";
 import type { PlanName } from "../../types";
 import ContactModal from "../../components/ContactModal";
@@ -76,25 +76,39 @@ export default function SubscriptionPage() {
   // Handle Stripe checkout return
   useEffect(() => {
     const checkout = searchParams.get("checkout");
+    const sessionId = searchParams.get("session_id");
     if (checkout === "success") {
-      setMessage("Payment successful! Your plan is being activated...");
-      // Refresh user to pick up plan change from webhook
-      const poll = async () => {
-        for (let i = 0; i < 10; i++) {
+      setMessage("Payment successful! Activating your plan...");
+      const finalize = async () => {
+        try {
+          if (token && sessionId) {
+            const res = await confirmCheckoutSession(token, sessionId);
+            if (res.applied) {
+              await refreshUser();
+              setMessage("Payment successful! Your plan is now active.");
+              return;
+            }
+            setMessage(res.message || "Payment received. Waiting for activation...");
+          }
+          // Fallback to refresh in case webhook applies shortly after redirect
           await refreshUser();
-          await new Promise(r => setTimeout(r, 2000));
+        } catch (e: any) {
+          setMessage(e?.detail || "Payment received. Waiting for activation...");
+          await refreshUser();
         }
       };
-      poll();
+      void finalize();
       // Clear the query param
       searchParams.delete("checkout");
+      searchParams.delete("session_id");
       setSearchParams(searchParams, { replace: true });
     } else if (checkout === "cancel") {
       setMessage("Checkout was cancelled. You can try again anytime.");
       searchParams.delete("checkout");
+      searchParams.delete("session_id");
       setSearchParams(searchParams, { replace: true });
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSelect(planId: PlanName) {
     if (!token) return;

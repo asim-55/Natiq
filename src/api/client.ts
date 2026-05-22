@@ -245,6 +245,13 @@ export async function createCheckoutSession(token: string, plan: PlanName, billi
   );
 }
 
+export async function confirmCheckoutSession(token: string, sessionId: string) {
+  return api<{ status: string; paid: boolean; applied: boolean; plan?: string; message: string }>(
+    "/checkout-session-status",
+    { method: "POST", headers: headers(token), body: JSON.stringify({ session_id: sessionId }) },
+  );
+}
+
 export async function fetchPlans() {
   return api<{ plans: Record<string, PlanConfig> }>("/plans", { method: "GET", headers: { "Content-Type": "application/json" } });
 }
