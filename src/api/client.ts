@@ -252,6 +252,20 @@ export async function confirmCheckoutSession(token: string, sessionId: string) {
   );
 }
 
+export async function cancelSubscription(token: string) {
+  return api<{ status: string; message: string; cancel_at?: string }>(
+    "/cancel-subscription",
+    { method: "POST", headers: headers(token) },
+  );
+}
+
+export async function resumeSubscription(token: string) {
+  return api<{ status: string; message: string }>(
+    "/resume-subscription",
+    { method: "POST", headers: headers(token) },
+  );
+}
+
 export async function fetchPlans() {
   return api<{ plans: Record<string, PlanConfig> }>("/plans", { method: "GET", headers: { "Content-Type": "application/json" } });
 }

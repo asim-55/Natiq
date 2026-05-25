@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Check, Building2, Rocket, Shield } from "lucide-react";
+import { Check, Building2, Rocket, Shield, Zap, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { createCheckoutSession, confirmCheckoutSession } from "../../api/client";
+import { selectPlan, createCheckoutSession, confirmCheckoutSession, cancelSubscription, resumeSubscription } from "../../api/client";
 import { useSearchParams } from "react-router-dom";
 import type { PlanName } from "../../types";
 import ContactModal from "../../components/ContactModal";
@@ -19,8 +19,18 @@ interface PlanDef {
 
 const PLANS: PlanDef[] = [
   {
+    id: "free",
+    label: "Free",
+    monthlyPrice: 0,
+    annualPrice: 0,
+    credits: "500 credits / mo",
+    voices: "1 voice",
+    icon: <Zap size={18} />,
+    features: ["500 monthly credits", "1 voice clone", "5 emotions", "API access"],
+  },
+  {
     id: "plus",
-    label: "Plus",
+    label: "Startup",
     monthlyPrice: 29,
     annualPrice: 23,
     credits: "5,000 credits / mo",
@@ -57,6 +67,8 @@ export default function SubscriptionPage() {
   const [message, setMessage] = useState("");
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // If the user is an org member, billing_owner_id is set — they cannot change plans
   const isOrgMember = !!(user as any)?.billing_owner_id;
@@ -108,22 +120,71 @@ export default function SubscriptionPage() {
     }
     setLoading(planId);
     try {
-      // Paid plans redirect to Stripe Checkout. Free is assigned automatically on sign-up.
-      const res = await createCheckoutSession(token, planId, billing);
-      if (res.checkout_url) {
-        window.location.href = res.checkout_url;
-        return;
+      if (planId === "free") {
+        // Free plan activates instantly
+        await selectPlan(token, planId);
+        await refreshUser();
+        setMessage("Plan updated to Free!");
+      } else {
+        // Paid plans — redirect to Stripe Checkout
+        const res = await createCheckoutSession(token, planId, billing);
+        if (res.checkout_url) {
+          window.location.href = res.checkout_url;
+          return;
+        }
       }
     } catch (e: any) {
-      setMessage(e.detail || "Failed to start checkout");
+      // If Stripe not configured (503), fall back to instant activation for testing
+      if (e.status === 503 || e.status === 400) {
+        try {
+          await selectPlan(token, planId);
+          await refreshUser();
+          setMessage(`Plan updated to ${planId} (test mode)!`);
+        } catch (e2: any) {
+          setMessage(e2.detail || "Failed to update plan");
+        }
+      } else {
+        setMessage(e.detail || "Failed to update plan");
+      }
     } finally {
       setLoading(null);
     }
   }
 
+  const isCancelling = !!user?.subscription_cancel_at;
+  const hasSubscription = !!user?.has_subscription && currentPlan !== "free";
+
+  async function handleCancelSubscription() {
+    if (!token) return;
+    setCancelLoading(true);
+    try {
+      const res = await cancelSubscription(token);
+      await refreshUser();
+      setMessage(res.message);
+      setShowCancelConfirm(false);
+    } catch (e: any) {
+      setMessage(e.detail || "Failed to cancel subscription");
+    } finally {
+      setCancelLoading(false);
+    }
+  }
+
+  async function handleResumeSubscription() {
+    if (!token) return;
+    setCancelLoading(true);
+    try {
+      const res = await resumeSubscription(token);
+      await refreshUser();
+      setMessage(res.message);
+    } catch (e: any) {
+      setMessage(e.detail || "Failed to resume subscription");
+    } finally {
+      setCancelLoading(false);
+    }
+  }
+
   const totalCredits = user?.credits ?? 0;
   const planCfg = PLANS.find(p => p.id === currentPlan);
-  const currentPlanLabel = currentPlan === "free" ? "Free" : (planCfg?.label ?? currentPlan);
   const planMaxCredits =
     currentPlan === "free" ? 500 : currentPlan === "plus" ? 5000 : currentPlan === "pro" ? 25000 : 99999;
   const creditPct = Math.min(100, Math.round((totalCredits / planMaxCredits) * 100));
@@ -150,13 +211,16 @@ export default function SubscriptionPage() {
           <p className="mt-2 text-xs text-slate-500">{creditPct}% used · resets monthly</p>
         </div>
 
-        {/* Subscription plan */}
+        {/* Voice Agent Dollars */}
         <div className="dashboard-panel p-5">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-slate-500">Subscription plan</p>
-              <p className="mt-2 text-4xl font-bold text-white capitalize">{currentPlanLabel}</p>
-              <p className="mt-1 text-sm text-slate-400">Active plan</p>
+              <p className="text-xs uppercase tracking-widest text-slate-500">Voice Agent Dollars Remaining</p>
+              <p className="mt-2 text-4xl font-bold text-white">
+                ${billing === "monthly" ? (planCfg?.monthlyPrice ?? 0) : (planCfg?.annualPrice ?? 0)}
+                <span className="text-base font-normal text-slate-400">/mo</span>
+              </p>
+              <p className="mt-1 text-sm text-slate-400 capitalize">{currentPlan} plan · {billing} billing</p>
             </div>
             <span className="mt-1 flex h-2.5 w-2.5 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]" />
           </div>
@@ -293,6 +357,78 @@ export default function SubscriptionPage() {
           })}
         </div>
       </div>
+
+      {/* ── Subscription management ── */}
+      {hasSubscription && !isOrgMember && (
+        <div className="dashboard-panel p-5 sm:p-6">
+          <p className="text-xs uppercase tracking-widest text-cyan-300">Subscription</p>
+          <h2 className="mt-1 text-xl font-semibold text-white">Manage subscription</h2>
+
+          {isCancelling ? (
+            <div className="mt-4">
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/5 px-4 py-3.5">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-400" />
+                <div>
+                  <p className="text-sm font-medium text-amber-200">Subscription ending</p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Your subscription is set to cancel on{" "}
+                    <span className="font-semibold text-white">
+                      {new Date(user!.subscription_cancel_at!).toLocaleDateString("en-US", {
+                        year: "numeric", month: "long", day: "numeric",
+                      })}
+                    </span>.
+                    You'll keep your current plan until then. After that, you'll be moved to the Free plan.
+                  </p>
+                  <button
+                    onClick={handleResumeSubscription}
+                    disabled={cancelLoading}
+                    className="mt-3 rounded-xl bg-cyan-300 px-5 py-2 text-sm font-semibold text-ink-950 hover:bg-cyan-200 transition disabled:opacity-60"
+                  >
+                    {cancelLoading ? "Resuming…" : "Resume subscription"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <p className="text-sm text-slate-400">
+                Your subscription auto-renews {billing === "annual" ? "annually" : "monthly"}.
+                If you cancel, you'll keep access until the end of the current billing period.
+              </p>
+              {!showCancelConfirm ? (
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-5 py-2 text-sm font-semibold text-red-300 hover:bg-red-400/20 transition"
+                >
+                  Cancel subscription
+                </button>
+              ) : (
+                <div className="mt-3 flex items-center gap-3 rounded-2xl border border-red-400/30 bg-red-400/5 px-4 py-3.5">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-200">Are you sure?</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Your plan will remain active until the end of the billing period, then downgrade to Free.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCancelSubscription}
+                    disabled={cancelLoading}
+                    className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400 transition disabled:opacity-60"
+                  >
+                    {cancelLoading ? "Cancelling…" : "Confirm cancel"}
+                  </button>
+                  <button
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 transition"
+                  >
+                    Keep plan
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
     </>
   );

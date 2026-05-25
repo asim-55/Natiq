@@ -12,6 +12,8 @@ export interface User {
   plan: PlanName;
   plan_started_at: string;
   created_at: string;
+  subscription_cancel_at?: string | null;
+  has_subscription?: boolean;
 }
 
 export interface AuthResponse {
