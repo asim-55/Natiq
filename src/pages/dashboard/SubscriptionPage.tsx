@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Check, Building2, Rocket, Shield, Zap, AlertTriangle } from "lucide-react";
+import { Check, Building2, Rocket, Shield, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { selectPlan, createCheckoutSession, confirmCheckoutSession, cancelSubscription, resumeSubscription } from "../../api/client";
+import { selectPlan, createCheckoutSession, confirmCheckoutSession, cancelSubscription, resumeSubscription, fetchSubscriptionInfo } from "../../api/client";
 import { useSearchParams } from "react-router-dom";
 import type { PlanName } from "../../types";
 import ContactModal from "../../components/ContactModal";
@@ -18,16 +18,6 @@ interface PlanDef {
 }
 
 const PLANS: PlanDef[] = [
-  {
-    id: "free",
-    label: "Free",
-    monthlyPrice: 0,
-    annualPrice: 0,
-    credits: "500 credits / mo",
-    voices: "1 voice",
-    icon: <Zap size={18} />,
-    features: ["500 monthly credits", "1 voice clone", "5 emotions", "API access"],
-  },
   {
     id: "plus",
     label: "Startup",
@@ -69,11 +59,23 @@ export default function SubscriptionPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [nextBillingDate, setNextBillingDate] = useState<string | null>(null);
 
   // If the user is an org member, billing_owner_id is set — they cannot change plans
   const isOrgMember = !!(user as any)?.billing_owner_id;
 
   const currentPlan = user?.plan ?? "free";
+
+  // Fetch subscription info (next billing date) on mount
+  useEffect(() => {
+    if (token && currentPlan !== "free") {
+      fetchSubscriptionInfo(token)
+        .then(res => {
+          if (res.next_billing_date) setNextBillingDate(res.next_billing_date);
+        })
+        .catch(() => {});
+    }
+  }, [token, currentPlan]);
 
   // Handle Stripe checkout return
   useEffect(() => {
@@ -120,18 +122,11 @@ export default function SubscriptionPage() {
     }
     setLoading(planId);
     try {
-      if (planId === "free") {
-        // Free plan activates instantly
-        await selectPlan(token, planId);
-        await refreshUser();
-        setMessage("Plan updated to Free!");
-      } else {
-        // Paid plans — redirect to Stripe Checkout
-        const res = await createCheckoutSession(token, planId, billing);
-        if (res.checkout_url) {
-          window.location.href = res.checkout_url;
-          return;
-        }
+      // Paid plans — redirect to Stripe Checkout
+      const res = await createCheckoutSession(token, planId, billing);
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;
       }
     } catch (e: any) {
       // If Stripe not configured (503), fall back to instant activation for testing
@@ -211,20 +206,27 @@ export default function SubscriptionPage() {
           <p className="mt-2 text-xs text-slate-500">{creditPct}% used · resets monthly</p>
         </div>
 
-        {/* Voice Agent Dollars */}
+        {/* Next Billing / Plan info */}
         <div className="dashboard-panel p-5">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-slate-500">Voice Agent Dollars Remaining</p>
-              <p className="mt-2 text-4xl font-bold text-white">
-                ${billing === "monthly" ? (planCfg?.monthlyPrice ?? 0) : (planCfg?.annualPrice ?? 0)}
-                <span className="text-base font-normal text-slate-400">/mo</span>
+              <p className="text-xs uppercase tracking-widest text-slate-500">
+                {isCancelling ? "Plan Ends On" : "Next Billing Date"}
               </p>
-              <p className="mt-1 text-sm text-slate-400 capitalize">{currentPlan} plan · {billing} billing</p>
+              <p className="mt-2 text-4xl font-bold text-white">
+                {isCancelling && user?.subscription_cancel_at
+                  ? new Date(user.subscription_cancel_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                  : nextBillingDate
+                    ? new Date(nextBillingDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : currentPlan === "free" ? "—" : "…"}
+              </p>
+              <p className="mt-1 text-sm text-slate-400 capitalize">
+                {currentPlan} plan · {isCancelling ? "cancelling" : "auto-renews"}
+              </p>
             </div>
-            <span className="mt-1 flex h-2.5 w-2.5 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]" />
+            <span className={`mt-1 flex h-2.5 w-2.5 rounded-full ${isCancelling ? "bg-amber-400 shadow-[0_0_6px_2px_rgba(251,191,36,0.5)]" : "bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]"}`} />
           </div>
-          <p className="mt-6 text-xs text-slate-500">Current plan started: {user?.plan_started_at ? new Date(user.plan_started_at).toLocaleDateString() : "—"}</p>
+          <p className="mt-6 text-xs text-slate-500">Plan started: {user?.plan_started_at ? new Date(user.plan_started_at).toLocaleDateString() : "—"}</p>
         </div>
       </div>
 
@@ -233,7 +235,9 @@ export default function SubscriptionPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <p className="text-xs uppercase tracking-widest text-cyan-300">Plans</p>
-            <h2 className="mt-1 text-xl font-semibold text-white">Choose your plan</h2>
+            <h2 className="mt-1 text-xl font-semibold text-white">
+              {currentPlan === "free" ? "Upgrade your plan" : "Choose your plan"}
+            </h2>
           </div>
           {/* Monthly / Annual toggle — hidden for org members */}
           {!isOrgMember && (

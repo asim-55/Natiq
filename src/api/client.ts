@@ -266,6 +266,16 @@ export async function resumeSubscription(token: string) {
   );
 }
 
+export async function fetchSubscriptionInfo(token: string) {
+  return api<{
+    status: string;
+    has_subscription: boolean;
+    subscription_status?: string;
+    next_billing_date?: string;
+    cancel_at_period_end?: boolean;
+  }>("/subscription-info", { headers: headers(token) });
+}
+
 export async function fetchPlans() {
   return api<{ plans: Record<string, PlanConfig> }>("/plans", { method: "GET", headers: { "Content-Type": "application/json" } });
 }
