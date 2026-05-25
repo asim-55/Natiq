@@ -123,6 +123,7 @@ export default function SubscriptionPage() {
 
   const totalCredits = user?.credits ?? 0;
   const planCfg = PLANS.find(p => p.id === currentPlan);
+  const currentPlanLabel = currentPlan === "free" ? "Free" : (planCfg?.label ?? currentPlan);
   const planMaxCredits =
     currentPlan === "free" ? 500 : currentPlan === "plus" ? 5000 : currentPlan === "pro" ? 25000 : 99999;
   const creditPct = Math.min(100, Math.round((totalCredits / planMaxCredits) * 100));
@@ -149,16 +150,13 @@ export default function SubscriptionPage() {
           <p className="mt-2 text-xs text-slate-500">{creditPct}% used · resets monthly</p>
         </div>
 
-        {/* Voice Agent Dollars */}
+        {/* Subscription plan */}
         <div className="dashboard-panel p-5">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-slate-500">Voice Agent Dollars Remaining</p>
-              <p className="mt-2 text-4xl font-bold text-white">
-                ${billing === "monthly" ? (planCfg?.monthlyPrice ?? 0) : (planCfg?.annualPrice ?? 0)}
-                <span className="text-base font-normal text-slate-400">/mo</span>
-              </p>
-              <p className="mt-1 text-sm text-slate-400 capitalize">{currentPlan} plan · {billing} billing</p>
+              <p className="text-xs uppercase tracking-widest text-slate-500">Subscription plan</p>
+              <p className="mt-2 text-4xl font-bold text-white capitalize">{currentPlanLabel}</p>
+              <p className="mt-1 text-sm text-slate-400">Active plan</p>
             </div>
             <span className="mt-1 flex h-2.5 w-2.5 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]" />
           </div>
