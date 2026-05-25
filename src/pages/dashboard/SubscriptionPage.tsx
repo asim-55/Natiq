@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Check, Building2, Rocket, Shield, Zap } from "lucide-react";
+import { Check, Building2, Rocket, Shield } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { selectPlan, createCheckoutSession, confirmCheckoutSession } from "../../api/client";
+import { createCheckoutSession, confirmCheckoutSession } from "../../api/client";
 import { useSearchParams } from "react-router-dom";
 import type { PlanName } from "../../types";
 import ContactModal from "../../components/ContactModal";
@@ -18,16 +18,6 @@ interface PlanDef {
 }
 
 const PLANS: PlanDef[] = [
-  {
-    id: "free",
-    label: "Free",
-    monthlyPrice: 0,
-    annualPrice: 0,
-    credits: "500 credits / mo",
-    voices: "1 voice",
-    icon: <Zap size={18} />,
-    features: ["500 monthly credits", "1 voice clone", "5 emotions", "API access"],
-  },
   {
     id: "plus",
     label: "Plus",
@@ -118,32 +108,14 @@ export default function SubscriptionPage() {
     }
     setLoading(planId);
     try {
-      if (planId === "free") {
-        // Free plan activates instantly
-        await selectPlan(token, planId);
-        await refreshUser();
-        setMessage("Plan updated to Free!");
-      } else {
-        // Paid plans — redirect to Stripe Checkout
-        const res = await createCheckoutSession(token, planId, billing);
-        if (res.checkout_url) {
-          window.location.href = res.checkout_url;
-          return;
-        }
+      // Paid plans redirect to Stripe Checkout. Free is assigned automatically on sign-up.
+      const res = await createCheckoutSession(token, planId, billing);
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;
       }
     } catch (e: any) {
-      // If Stripe not configured (503), fall back to instant activation for testing
-      if (e.status === 503 || e.status === 400) {
-        try {
-          await selectPlan(token, planId);
-          await refreshUser();
-          setMessage(`Plan updated to ${planId} (test mode)!`);
-        } catch (e2: any) {
-          setMessage(e2.detail || "Failed to update plan");
-        }
-      } else {
-        setMessage(e.detail || "Failed to update plan");
-      }
+      setMessage(e.detail || "Failed to start checkout");
     } finally {
       setLoading(null);
     }
