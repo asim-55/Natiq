@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           <div>
             <Link to="/" className="flex items-center gap-3">
-              <img src="/natiq_logo.jpeg" alt="Natiq" className="h-10 w-auto" />
+              <img src="/natiq_logo.png" alt="Natiq" className="h-10 w-auto" />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-6 text-slate-400">
               Enterprise-grade voice generation for the finance, telecom, and enterprise sectors.

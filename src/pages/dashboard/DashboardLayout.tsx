@@ -44,7 +44,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-screen flex-col p-5">
       {/* Logo */}
       <Link to="/" onClick={onNavigate} className="flex items-center gap-3 px-2 flex-shrink-0">
-        <img src="/natiq_logo.jpeg" alt="Natiq" className="h-10 w-auto" />
+        <img src="/natiq_logo.png" alt="Natiq" className="h-10 w-auto" />
       </Link>
 
       {/* Top nav - scrollable */}
