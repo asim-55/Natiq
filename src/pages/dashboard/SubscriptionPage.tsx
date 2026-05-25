@@ -30,7 +30,7 @@ const PLANS: PlanDef[] = [
   },
   {
     id: "plus",
-    label: "Startup",
+    label: "Plus",
     monthlyPrice: 29,
     annualPrice: 23,
     credits: "5,000 credits / mo",
