@@ -60,6 +60,7 @@ export default function SubscriptionPage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [nextBillingDate, setNextBillingDate] = useState<string | null>(null);
+  const [localCancelAt, setLocalCancelAt] = useState<string | null>(null);
 
   // If the user is an org member, billing_owner_id is set — they cannot change plans
   const isOrgMember = !!(user as any)?.billing_owner_id;
@@ -146,7 +147,8 @@ export default function SubscriptionPage() {
     }
   }
 
-  const isCancelling = !!user?.subscription_cancel_at;
+  const cancelAt = localCancelAt ?? user?.subscription_cancel_at ?? null;
+  const isCancelling = !!cancelAt;
   const hasSubscription = !!user?.has_subscription && currentPlan !== "free";
 
   async function handleCancelSubscription() {
@@ -154,9 +156,10 @@ export default function SubscriptionPage() {
     setCancelLoading(true);
     try {
       const res = await cancelSubscription(token);
-      await refreshUser();
-      setMessage(res.message);
+      setLocalCancelAt(res.cancel_at ?? nextBillingDate ?? new Date().toISOString());
       setShowCancelConfirm(false);
+      setMessage(res.message);
+      await refreshUser();
     } catch (e: any) {
       setMessage(e.detail || "Failed to cancel subscription");
     } finally {
@@ -169,8 +172,9 @@ export default function SubscriptionPage() {
     setCancelLoading(true);
     try {
       const res = await resumeSubscription(token);
-      await refreshUser();
+      setLocalCancelAt(null);
       setMessage(res.message);
+      await refreshUser();
     } catch (e: any) {
       setMessage(e.detail || "Failed to resume subscription");
     } finally {
@@ -214,10 +218,10 @@ export default function SubscriptionPage() {
                 {isCancelling ? "Plan Ends On" : "Next Billing Date"}
               </p>
               <p className="mt-2 text-4xl font-bold text-white">
-                {isCancelling && user?.subscription_cancel_at
-                  ? new Date(user.subscription_cancel_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                {isCancelling && cancelAt
+                  ? new Date(cancelAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
                   : nextBillingDate
-                    ? new Date(nextBillingDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    ? new Date(nextBillingDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
                     : currentPlan === "free" ? "—" : "…"}
               </p>
               <p className="mt-1 text-sm text-slate-400 capitalize">
@@ -377,7 +381,7 @@ export default function SubscriptionPage() {
                   <p className="mt-1 text-sm text-slate-400">
                     Your subscription is set to cancel on{" "}
                     <span className="font-semibold text-white">
-                      {new Date(user!.subscription_cancel_at!).toLocaleDateString("en-US", {
+                      {new Date(cancelAt!).toLocaleDateString("en-US", {
                         year: "numeric", month: "long", day: "numeric",
                       })}
                     </span>.
