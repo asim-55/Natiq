@@ -108,7 +108,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
 export default function DashboardLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -117,6 +117,11 @@ export default function DashboardLayout() {
 
   const allNav = [...TOP_NAV, ...SETTINGS_SUB];
   const currentPage = allNav.find(n => n.path === location.pathname);
+
+  // Keep org billing credits/plan fresh when moving around the dashboard.
+  useEffect(() => {
+    refreshUser();
+  }, [location.pathname]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

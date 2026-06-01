@@ -555,14 +555,16 @@ export default function InstantVoiceCloningPage() {
                     <span className="text-xs text-slate-400">Uses AI to remove background noise from your recording</span>
                   </div>
                   <button
-                    onClick={() => setEnableDenoise(!enableDenoise)}
+                    type="button"
+                    aria-pressed={enableDenoise}
+                    onClick={() => setEnableDenoise((value) => !value)}
                     className={`relative h-6 w-11 rounded-full transition-colors ${
                       enableDenoise ? "bg-cyan-300" : "bg-slate-600"
                     }`}
                   >
                     <span
-                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                        enableDenoise ? "translate-x-5.5" : "translate-x-0.5"
+                      className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                        enableDenoise ? "translate-x-5" : "translate-x-0"
                       }`}
                     />
                   </button>

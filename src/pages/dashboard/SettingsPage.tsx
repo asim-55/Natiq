@@ -15,6 +15,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [expiryInput, setExpiryInput] = useState<Record<number, string>>({});
+  const [settingsError, setSettingsError] = useState("");
+  const [sessionBusy, setSessionBusy] = useState<number | "others" | null>(null);
+  const [tokenBusy, setTokenBusy] = useState<number | null>(null);
 
   const loadTokens = async () => {
     if (!token) return;
@@ -32,36 +35,69 @@ export default function SettingsPage() {
 
   const handleCreate = async () => {
     if (!token || !newTokenName.trim()) return;
+    setSettingsError("");
     try {
       const res = await createApiToken(token, newTokenName.trim());
       setNewTokenSecret(res.token);
       setNewTokenName("");
-      loadTokens();
-    } catch { /* ignore */ }
+      await loadTokens();
+    } catch (e: any) {
+      setSettingsError(e.detail || "Failed to create token");
+    }
   };
 
   const handleDelete = async (id: number) => {
     if (!token) return;
-    try { await deleteApiToken(token, id); loadTokens(); } catch { /* ignore */ }
+    setSettingsError("");
+    setTokenBusy(id);
+    try {
+      await deleteApiToken(token, id);
+      setTokens((items) => items.filter((item) => item.id !== id));
+    } catch (e: any) {
+      setSettingsError(e.detail || "Failed to revoke token");
+    } finally {
+      setTokenBusy(null);
+    }
   };
 
   const handleSetExpiry = async (id: number) => {
     if (!token) return;
     const val = expiryInput[id]?.trim() || null;
+    setSettingsError("");
     try {
       await setApiTokenExpiry(token, id, val ? new Date(val).toISOString() : null);
-      loadTokens();
-    } catch { /* ignore */ }
+      await loadTokens();
+    } catch (e: any) {
+      setSettingsError(e.detail || "Failed to update token expiry");
+    }
   };
 
   const handleRevokeSession = async (id: number) => {
     if (!token) return;
-    try { await revokeSession(token, id); loadSessions(); } catch { /* ignore */ }
+    setSettingsError("");
+    setSessionBusy(id);
+    try {
+      await revokeSession(token, id);
+      setSessions((items) => items.filter((item) => item.id !== id));
+    } catch (e: any) {
+      setSettingsError(e.detail || "Failed to revoke session");
+    } finally {
+      setSessionBusy(null);
+    }
   };
 
   const handleRevokeOthers = async () => {
     if (!token) return;
-    try { await revokeOtherSessions(token); loadSessions(); } catch { /* ignore */ }
+    setSettingsError("");
+    setSessionBusy("others");
+    try {
+      await revokeOtherSessions(token);
+      setSessions((items) => items.filter((item) => item.is_current));
+    } catch (e: any) {
+      setSettingsError(e.detail || "Failed to revoke sessions");
+    } finally {
+      setSessionBusy(null);
+    }
   };
 
   const handleCopy = () => { navigator.clipboard.writeText(newTokenSecret); setCopied(true); setTimeout(() => setCopied(false), 2000); };
@@ -100,12 +136,18 @@ export default function SettingsPage() {
             <p className="mt-2 text-sm text-slate-400">Every device that has a valid login. Revoke any session you don't recognise.</p>
           </div>
           <button
-            className="secondary-button shrink-0"
+            className="secondary-button shrink-0 disabled:opacity-50"
             onClick={handleRevokeOthers}
+            disabled={sessionBusy !== null || sessions.every((s) => s.is_current)}
           >
-            Revoke all others
+            {sessionBusy === "others" ? "Revoking..." : "Revoke all others"}
           </button>
         </div>
+        {settingsError && (
+          <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+            {settingsError}
+          </div>
+        )}
         <div className="mt-5">
           {sessionsLoading ? (
             <p className="text-sm text-slate-400">Loading...</p>
@@ -124,14 +166,15 @@ export default function SettingsPage() {
                       {s.is_current && <span className="ml-2 rounded-full bg-cyan-300/20 px-2 py-0.5 text-xs text-cyan-300">Current</span>}
                     </p>
                     <p className="mt-0.5 text-xs text-slate-400">
-                      IP: {s.ip || "unknown"} · Signed in {s.created_at.slice(0, 10)}
+                      Signed in {s.created_at.slice(0, 10)}
                       {s.last_used_at && ` · Last active ${s.last_used_at.slice(0, 10)}`}
                     </p>
                   </div>
                   {!s.is_current && (
                     <button
-                      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-400/30 bg-red-400/10 text-red-300 transition hover:bg-red-400/20"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-400/30 bg-red-400/10 text-red-300 transition hover:bg-red-400/20 disabled:opacity-50"
                       onClick={() => handleRevokeSession(s.id)}
+                      disabled={sessionBusy !== null}
                       title="Revoke session"
                     >
                       <Trash2 size={16} />
@@ -182,7 +225,7 @@ export default function SettingsPage() {
                         {tk.expires_at && ` · Expires ${tk.expires_at.slice(0, 10)}`}
                       </p>
                     </div>
-                    <button className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-400/30 bg-red-400/10 text-red-300 transition hover:bg-red-400/20" onClick={() => handleDelete(tk.id)} title="Revoke token"><Trash2 size={16} /></button>
+                    <button className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-400/30 bg-red-400/10 text-red-300 transition hover:bg-red-400/20 disabled:opacity-50" onClick={() => handleDelete(tk.id)} disabled={tokenBusy === tk.id} title="Revoke token"><Trash2 size={16} /></button>
                   </div>
                   {/* Expiry setter */}
                   <div className="flex items-center gap-2 pt-1 border-t border-white/5">
