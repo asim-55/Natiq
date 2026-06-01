@@ -318,6 +318,8 @@ export default function OrganizationPage() {
   const [org, setOrg] = useState<Organization | null>(null);
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [invitations, setInvitations] = useState<OrgInvitation[]>([]);
+  const [pendingRoles, setPendingRoles] = useState<Record<number, OrgRole>>({});
+  const [roleBusyId, setRoleBusyId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   // email → invite_link (only populated when SMTP is not configured)
   const [recentLinks, setRecentLinks] = useState<Record<string, string>>({});
@@ -400,14 +402,35 @@ export default function OrganizationPage() {
     await loadMembers();
   };
 
-  const handleChangeRole = async (userId: number, newRole: string) => {
+  const handleStageRole = (userId: number, currentRole: OrgRole, newRole: string) => {
+    const nextRole = newRole as OrgRole;
+    setPendingRoles((prev) => {
+      const copy = { ...prev };
+      if (nextRole === currentRole) delete copy[userId];
+      else copy[userId] = nextRole;
+      return copy;
+    });
+  };
+
+  const handleConfirmRole = async (userId: number) => {
     if (!token || !org) return;
+    const newRole = pendingRoles[userId];
+    if (!newRole) return;
+    setRoleBusyId(userId);
     try {
       await changeMemberRole(token, org.id, userId, newRole);
-      setMembers(m => m.map(x => x.user_id === userId ? { ...x, role: newRole as OrgRole } : x));
+      setMembers(m => m.map(x => x.user_id === userId ? { ...x, role: newRole } : x));
+      setPendingRoles((prev) => { const copy = { ...prev }; delete copy[userId]; return copy; });
+      show("Role updated");
     } catch (e: any) {
       show(e.message, "error");
+    } finally {
+      setRoleBusyId(null);
     }
+  };
+
+  const handleCancelRole = (userId: number) => {
+    setPendingRoles((prev) => { const copy = { ...prev }; delete copy[userId]; return copy; });
   };
 
   const handleRemoveMember = async (userId: number) => {
@@ -670,11 +693,32 @@ export default function OrganizationPage() {
                   {m.role === "owner" ? (
                     <span className="text-xs text-cyan-300 font-medium">Owner</span>
                   ) : isOwnerOrAdmin ? (
-                    <RoleDropdown
-                      value={m.role}
-                      onChange={v => handleChangeRole(m.user_id, v)}
-                      disabled={m.user_id === user?.id && myRole !== "owner"}
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <RoleDropdown
+                        value={pendingRoles[m.user_id] ?? m.role}
+                        onChange={v => handleStageRole(m.user_id, m.role, v)}
+                        disabled={(m.user_id === user?.id && myRole !== "owner") || roleBusyId === m.user_id}
+                      />
+                      {pendingRoles[m.user_id] && pendingRoles[m.user_id] !== m.role && (
+                        <>
+                          <button
+                            onClick={() => handleConfirmRole(m.user_id)}
+                            disabled={roleBusyId === m.user_id}
+                            className="rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-2.5 py-1 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-300/20 disabled:opacity-50"
+                          >
+                            {roleBusyId === m.user_id ? "Saving..." : "Done"}
+                          </button>
+                          <button
+                            onClick={() => handleCancelRole(m.user_id)}
+                            disabled={roleBusyId === m.user_id}
+                            className="grid h-7 w-7 place-items-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition hover:text-white disabled:opacity-50"
+                            title="Cancel role change"
+                          >
+                            <X size={13} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-xs capitalize text-slate-400">{m.role}</span>
                   )}
