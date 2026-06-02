@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Check, Rocket, Shield, Crown, AlertTriangle } from "lucide-react";
+import { Building2, Check, Rocket, Shield, Crown, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { createCheckoutSession, confirmCheckoutSession, cancelSubscription, resumeSubscription, fetchSubscriptionInfo } from "../../api/client";
 import { useSearchParams } from "react-router-dom";
 import type { PlanName } from "../../types";
+import ContactModal from "../../components/ContactModal";
 
 interface PlanDef {
   id: PlanName;
@@ -47,6 +48,16 @@ const PLANS: PlanDef[] = [
     icon: <Shield size={18} />,
     features: ["500,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "Dedicated queue", "Analytics", "SLA support"],
   },
+  {
+    id: "enterprise",
+    label: "Enterprise",
+    monthlyPrice: null,
+    annualPrice: null,
+    credits: "Custom credits",
+    voices: "Unlimited voices",
+    icon: <Building2 size={18} />,
+    features: ["Custom volume", "Unlimited voice clones", "All 23 emotions", "Dedicated support", "Custom SLA"],
+  },
 ];
 
 export default function SubscriptionPage() {
@@ -59,6 +70,7 @@ export default function SubscriptionPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [nextBillingDate, setNextBillingDate] = useState<string | null>(null);
   const [localCancelAt, setLocalCancelAt] = useState<string | null>(null);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   // If the user is an org member, billing_owner_id is set — they cannot change plans
   const isOrgMember = !!(user as any)?.billing_owner_id;
@@ -114,7 +126,11 @@ export default function SubscriptionPage() {
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSelect(planId: PlanName) {
-    if (!token) return;
+    if (planId === "enterprise") {
+      setContactModalOpen(true);
+      return;
+    }
+    if (!token || planId === "free") return;
     setLoading(planId);
     try {
       // Paid plans — redirect to Stripe Checkout
@@ -167,9 +183,9 @@ export default function SubscriptionPage() {
 
   const totalCredits = user?.credits ?? 0;
   const planMaxCredits =
-    currentPlan === "free" ? 1000 : currentPlan === "pro" ? 10000 : currentPlan === "startup" ? 70000 : currentPlan === "scale" ? 500000 : 1000;
+    currentPlan === "free" ? 1000 : currentPlan === "pro" ? 10000 : currentPlan === "startup" ? 70000 : currentPlan === "scale" ? 500000 : currentPlan === "enterprise" ? 999999 : 1000;
   const creditPct = Math.min(100, Math.round((totalCredits / planMaxCredits) * 100));
-  const currentPlanLabel = currentPlan === "startup" ? "Startup" : currentPlan === "scale" ? "Scale" : currentPlan === "pro" ? "Pro" : "Free";
+  const currentPlanLabel = currentPlan === "enterprise" ? "Enterprise" : currentPlan === "startup" ? "Startup" : currentPlan === "scale" ? "Scale" : currentPlan === "pro" ? "Pro" : "Free";
   const billingDisplayDate = isCancelling && cancelAt
     ? new Date(cancelAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
     : nextBillingDate
@@ -178,6 +194,7 @@ export default function SubscriptionPage() {
 
   return (
     <>
+      <ContactModal open={contactModalOpen} onClose={() => setContactModalOpen(false)} />
       <div className="grid gap-6">
       {/* ── Credit summary cards ── */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -314,7 +331,16 @@ export default function SubscriptionPage() {
                         {price > 0 && <span className="text-xs font-normal text-slate-400">/mo</span>}
                       </p>
                     )
-                  ) : price === null ? null : (
+                  ) : price === null ? (
+                    !isActive && (
+                      <button
+                        onClick={e => { e.preventDefault(); handleSelect(plan.id); }}
+                        className="mt-2 rounded-xl bg-cyan-300 px-4 py-1.5 text-xs font-semibold text-ink-950 hover:bg-cyan-200 transition"
+                      >
+                        Contact us
+                      </button>
+                    )
+                  ) : (
                     <>
                       <p className="text-lg font-bold text-white">
                         {price === 0 ? "Free" : `$${price}`}

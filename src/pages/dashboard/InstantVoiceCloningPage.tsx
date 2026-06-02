@@ -127,7 +127,7 @@ export default function InstantVoiceCloningPage() {
   }
 
   // Check if user has access to denoise feature (Pro, Startup, and Scale plans only)
-  const canUseDenoise = user?.plan === "pro" || user?.plan === "startup" || user?.plan === "scale";
+  const canUseDenoise = user?.plan === "pro" || user?.plan === "startup" || user?.plan === "scale" || user?.plan === "enterprise";
 
   /**
    * Denoise audio if the feature is enabled and user has access

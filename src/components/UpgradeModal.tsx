@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Crown, Rocket, Shield, X } from "lucide-react";
+import { Building2, Crown, Rocket, Shield, X } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { createCheckoutSession } from "../api/client";
+import ContactModal from "./ContactModal";
 import type { PlanName } from "../types";
 
 interface Props {
@@ -14,16 +15,22 @@ const plans: { id: PlanName; label: string; price: string; icon: React.ReactNode
   { id: "pro", label: "Pro", price: "$4/mo", icon: <Crown size={18} />, highlight: true },
   { id: "startup", label: "Startup", price: "$41/mo", icon: <Rocket size={18} /> },
   { id: "scale", label: "Scale", price: "$254/mo", icon: <Shield size={18} /> },
+  { id: "enterprise", label: "Enterprise", price: "Custom", icon: <Building2 size={18} /> },
 ];
 
 export default function UpgradeModal({ open, onClose, message }: Props) {
   const { token } = useAuth();
   const [loading, setLoading] = useState<PlanName | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
 
   if (!open) return null;
 
   const handleUpgrade = async (plan: PlanName) => {
-    if (!token) return;
+    if (plan === "enterprise") {
+      setContactOpen(true);
+      return;
+    }
+    if (!token || plan === "free") return;
     setLoading(plan);
     try {
       const res = await createCheckoutSession(token, plan, "monthly");
@@ -39,6 +46,8 @@ export default function UpgradeModal({ open, onClose, message }: Props) {
   };
 
   return (
+    <>
+    <ContactModal open={contactOpen} onClose={() => setContactOpen(false)} />
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="relative mx-4 w-full max-w-lg rounded-3xl border border-white/10 bg-ink-950 p-6">
         <button
@@ -85,9 +94,10 @@ export default function UpgradeModal({ open, onClose, message }: Props) {
         </div>
 
         <p className="mt-4 text-center text-xs text-slate-500">
-          Paid plans are processed securely via Stripe.
+          Paid plans are processed securely via Stripe. Enterprise is handled by our team.
         </p>
       </div>
     </div>
+    </>
   );
 }

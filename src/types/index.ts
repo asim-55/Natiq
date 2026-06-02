@@ -1,6 +1,6 @@
 export type DashboardTab = "overview" | "voice" | "history" | "settings";
 
-export type PlanName = "free" | "pro" | "startup" | "scale";
+export type PlanName = "free" | "pro" | "startup" | "scale" | "enterprise";
 
 export interface User {
   id: number;
@@ -68,6 +68,7 @@ export interface PlanConfig {
   max_voices: number;
   allowed_emotions: string[] | "all";
   price: number;
+  annual_price?: number;
 }
 
 export interface PricingEstimate {

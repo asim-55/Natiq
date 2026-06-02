@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Check, Crown, Rocket, Shield, Zap } from "lucide-react";
+import { Building2, Check, Crown, Rocket, Shield, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import SignInModal from "../auth/SignInModal";
+import ContactModal from "../components/ContactModal";
 import PricingCalculator from "../components/PricingCalculator";
 
 interface PlanCard {
@@ -76,6 +77,21 @@ const plans: PlanCard[] = [
       "SLA support",
     ],
   },
+  {
+    label: "Enterprise",
+    monthlyPrice: null,
+    annualPrice: null,
+    credits: "Custom credits",
+    icon: <Building2 size={24} />,
+    features: [
+      "Custom credit volume",
+      "Unlimited voice clones",
+      "All 23 emotions",
+      "Dedicated support",
+      "Custom SLA",
+      "Deployment planning",
+    ],
+  },
 ];
 
 export default function PricingPage() {
@@ -83,8 +99,13 @@ export default function PricingPage() {
   const navigate = useNavigate();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [modalOpen, setModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   const handleGetStarted = (planLabel: string) => {
+    if (planLabel === "Enterprise") {
+      setContactModalOpen(true);
+      return;
+    }
     if (user) {
       navigate("/dashboard/overview");
     } else {
@@ -95,6 +116,7 @@ export default function PricingPage() {
   return (
     <>
       <SignInModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <ContactModal open={contactModalOpen} onClose={() => setContactModalOpen(false)} />
       <main className="relative z-10 pt-28 pb-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -126,7 +148,7 @@ export default function PricingPage() {
         </div>
 
         {/* Plan cards */}
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {plans.map((plan) => {
             const price =
               plan.monthlyPrice === null
@@ -189,7 +211,7 @@ export default function PricingPage() {
                       : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
                   }`}
                 >
-                  Get started
+                  {plan.label === "Enterprise" ? "Contact us" : "Get started"}
                 </button>
               </div>
             );

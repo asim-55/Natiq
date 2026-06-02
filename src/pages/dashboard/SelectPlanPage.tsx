@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Check, Crown, Rocket, Shield, Zap } from "lucide-react";
+import { Building2, Check, Crown, Rocket, Shield, Zap } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { selectPlan, createCheckoutSession } from "../../api/client";
 import { useNavigate } from "react-router-dom";
 import type { PlanName } from "../../types";
+import ContactModal from "../../components/ContactModal";
 
 interface PlanCard {
   id: PlanName;
@@ -76,15 +77,34 @@ const plans: PlanCard[] = [
       "SLA support",
     ],
   },
+  {
+    id: "enterprise",
+    label: "Enterprise",
+    price: "Custom",
+    credits: "Custom credits",
+    icon: <Building2 size={24} />,
+    features: [
+      "Custom credit volume",
+      "Unlimited voice clones",
+      "All emotions",
+      "Dedicated support",
+      "Custom SLA",
+    ],
+  },
 ];
 
 export default function SelectPlanPage() {
   const { token, refreshUser, clearIsNew } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<PlanName | null>(null);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   const handleSelect = async (plan: PlanName) => {
     if (!token) return;
+    if (plan === "enterprise") {
+      setContactModalOpen(true);
+      return;
+    }
     setLoading(plan);
     try {
       if (plan === "free") {
@@ -116,6 +136,7 @@ export default function SelectPlanPage() {
 
   return (
     <div className="min-h-screen bg-ink-950 text-slate-100">
+      <ContactModal open={contactModalOpen} onClose={() => setContactModalOpen(false)} />
       <div className="pointer-events-none fixed inset-0 bg-radial-field opacity-70" />
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-16">
         <p className="text-sm font-semibold text-cyan-200">Choose your plan</p>
@@ -126,7 +147,7 @@ export default function SelectPlanPage() {
           Credits renew monthly. 1 credit per 20 characters of generated speech. 10 credits per voice clone upload.
         </p>
 
-        <div className="mt-10 grid w-full max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid w-full max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {plans.map((plan) => (
             <div
               key={plan.id}
@@ -179,14 +200,14 @@ export default function SelectPlanPage() {
               >
                 {loading === plan.id
                   ? "Activating..."
-                  : `Select ${plan.label}`}
+                  : plan.id === "enterprise" ? "Contact us" : `Select ${plan.label}`}
               </button>
             </div>
           ))}
         </div>
 
         <p className="mt-8 text-center text-xs text-slate-500">
-          Paid plans are processed securely via Stripe. Free plan activates instantly.
+          Paid plans are processed securely via Stripe. Enterprise is handled by our team. Free plan activates instantly.
         </p>
       </div>
     </div>

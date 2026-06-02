@@ -37,7 +37,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const isActive = (path: string) => location.pathname === path;
 
   const planMaxCredits =
-    user?.plan === "scale" ? 500000 : user?.plan === "startup" ? 70000 : user?.plan === "pro" ? 10000 : 1000;
+    user?.plan === "enterprise" ? 999999 : user?.plan === "scale" ? 500000 : user?.plan === "startup" ? 70000 : user?.plan === "pro" ? 10000 : 1000;
   const creditPct = user ? Math.min(100, Math.round((user.credits / planMaxCredits) * 100)) : 0;
 
   return (
