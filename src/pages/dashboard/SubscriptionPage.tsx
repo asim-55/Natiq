@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { Check, Building2, Rocket, Shield, AlertTriangle } from "lucide-react";
+import { Check, Rocket, Shield, Crown, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
-import { selectPlan, createCheckoutSession, confirmCheckoutSession, cancelSubscription, resumeSubscription, fetchSubscriptionInfo } from "../../api/client";
+import { createCheckoutSession, confirmCheckoutSession, cancelSubscription, resumeSubscription, fetchSubscriptionInfo } from "../../api/client";
 import { useSearchParams } from "react-router-dom";
 import type { PlanName } from "../../types";
-import ContactModal from "../../components/ContactModal";
 
 interface PlanDef {
   id: PlanName;
@@ -19,34 +18,34 @@ interface PlanDef {
 
 const PLANS: PlanDef[] = [
   {
-    id: "plus",
-    label: "Startup",
-    monthlyPrice: 29,
-    annualPrice: 23,
-    credits: "5,000 credits / mo",
-    voices: "Unlimited voices",
-    icon: <Rocket size={18} />,
-    features: ["5,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "Priority queue", "API access"],
-  },
-  {
     id: "pro",
     label: "Pro",
-    monthlyPrice: 99,
-    annualPrice: 79,
-    credits: "25,000 credits / mo",
+    monthlyPrice: 4,
+    annualPrice: 3,
+    credits: "10,000 credits / mo",
     voices: "Unlimited voices",
-    icon: <Shield size={18} />,
-    features: ["25,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "Dedicated queue", "Analytics", "SLA support"],
+    icon: <Crown size={18} />,
+    features: ["10,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "API access"],
   },
   {
-    id: "enterprise",
-    label: "Enterprise",
-    monthlyPrice: null,
-    annualPrice: null,
-    credits: "Custom",
-    voices: "Unlimited",
-    icon: <Building2 size={18} />,
-    features: ["Custom credit volume", "Unlimited voice clones", "All emotions", "On-prem option", "Dedicated support", "Custom SLA"],
+    id: "startup",
+    label: "Startup",
+    monthlyPrice: 41,
+    annualPrice: 33,
+    credits: "70,000 credits / mo",
+    voices: "Unlimited voices",
+    icon: <Rocket size={18} />,
+    features: ["70,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "Priority queue", "API access"],
+  },
+  {
+    id: "scale",
+    label: "Scale",
+    monthlyPrice: 254,
+    annualPrice: 203,
+    credits: "500,000 credits / mo",
+    voices: "Unlimited voices",
+    icon: <Shield size={18} />,
+    features: ["500,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "Dedicated queue", "Analytics", "SLA support"],
   },
 ];
 
@@ -55,7 +54,6 @@ export default function SubscriptionPage() {
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [loading, setLoading] = useState<PlanName | null>(null);
   const [message, setMessage] = useState("");
-  const [contactModalOpen, setContactModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -117,10 +115,6 @@ export default function SubscriptionPage() {
 
   async function handleSelect(planId: PlanName) {
     if (!token) return;
-    if (planId === "enterprise") {
-      setContactModalOpen(true);
-      return;
-    }
     setLoading(planId);
     try {
       // Paid plans — redirect to Stripe Checkout
@@ -130,18 +124,7 @@ export default function SubscriptionPage() {
         return;
       }
     } catch (e: any) {
-      // If Stripe not configured (503), fall back to instant activation for testing
-      if (e.status === 503 || e.status === 400) {
-        try {
-          await selectPlan(token, planId);
-          await refreshUser();
-          setMessage(`Plan updated to ${planId} (test mode)!`);
-        } catch (e2: any) {
-          setMessage(e2.detail || "Failed to update plan");
-        }
-      } else {
-        setMessage(e.detail || "Failed to update plan");
-      }
+      setMessage(e.detail || "Failed to start checkout");
     } finally {
       setLoading(null);
     }
@@ -183,14 +166,18 @@ export default function SubscriptionPage() {
   }
 
   const totalCredits = user?.credits ?? 0;
-  const planCfg = PLANS.find(p => p.id === currentPlan);
   const planMaxCredits =
-    currentPlan === "free" ? 500 : currentPlan === "plus" ? 5000 : currentPlan === "pro" ? 25000 : 99999;
+    currentPlan === "free" ? 1000 : currentPlan === "pro" ? 10000 : currentPlan === "startup" ? 70000 : currentPlan === "scale" ? 500000 : 1000;
   const creditPct = Math.min(100, Math.round((totalCredits / planMaxCredits) * 100));
+  const currentPlanLabel = currentPlan === "startup" ? "Startup" : currentPlan === "scale" ? "Scale" : currentPlan === "pro" ? "Pro" : "Free";
+  const billingDisplayDate = isCancelling && cancelAt
+    ? new Date(cancelAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+    : nextBillingDate
+      ? new Date(nextBillingDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+      : null;
 
   return (
     <>
-      <ContactModal open={contactModalOpen} onClose={() => setContactModalOpen(false)} />
       <div className="grid gap-6">
       {/* ── Credit summary cards ── */}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -198,7 +185,7 @@ export default function SubscriptionPage() {
         <div className="dashboard-panel p-5">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-slate-500">Model Credits Remaining</p>
+              <p className="text-xs uppercase tracking-widest text-slate-500">Credits remaining</p>
               <p className="mt-2 text-4xl font-bold text-white">{totalCredits.toLocaleString()}</p>
               <p className="mt-1 text-sm text-slate-400">of {planMaxCredits.toLocaleString()} this month</p>
             </div>
@@ -210,22 +197,14 @@ export default function SubscriptionPage() {
           <p className="mt-2 text-xs text-slate-500">{creditPct}% used · resets monthly</p>
         </div>
 
-        {/* Next Billing / Plan info */}
+        {/* Subscription plan */}
         <div className="dashboard-panel p-5">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs uppercase tracking-widest text-slate-500">
-                {isCancelling ? "Plan Ends On" : "Next Billing Date"}
-              </p>
-              <p className="mt-2 text-4xl font-bold text-white">
-                {isCancelling && cancelAt
-                  ? new Date(cancelAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-                  : nextBillingDate
-                    ? new Date(nextBillingDate).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-                    : currentPlan === "free" ? "—" : "…"}
-              </p>
-              <p className="mt-1 text-sm text-slate-400 capitalize">
-                {currentPlan} plan · {isCancelling ? "cancelling" : "auto-renews"}
+              <p className="text-xs uppercase tracking-widest text-slate-500">Subscription plan</p>
+              <p className="mt-2 text-4xl font-bold text-white">{currentPlanLabel}</p>
+              <p className="mt-1 text-sm text-slate-400">
+                {isCancelling ? "Ends on" : "Next billing"}: {billingDisplayDate ?? "—"}
               </p>
             </div>
             <span className={`mt-1 flex h-2.5 w-2.5 rounded-full ${isCancelling ? "bg-amber-400 shadow-[0_0_6px_2px_rgba(251,191,36,0.5)]" : "bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]"}`} />
@@ -264,7 +243,7 @@ export default function SubscriptionPage() {
         {/* Org member notice */}
         {isOrgMember && (
           <div className="mb-5 flex items-start gap-3 rounded-2xl border border-cyan-300/20 bg-cyan-300/5 px-4 py-3.5">
-            <Building2 size={16} className="mt-0.5 shrink-0 text-cyan-300" />
+            <Shield size={16} className="mt-0.5 shrink-0 text-cyan-300" />
             <p className="text-sm text-slate-300">
               You’re a member of an organization. Your plan and credits are managed by your organization’s owner.
               Contact your admin to make changes.
@@ -335,14 +314,7 @@ export default function SubscriptionPage() {
                         {price > 0 && <span className="text-xs font-normal text-slate-400">/mo</span>}
                       </p>
                     )
-                  ) : price === null ? (
-                    <button
-                      onClick={e => { e.preventDefault(); handleSelect("enterprise"); }}
-                      className="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-200 hover:bg-cyan-300/20 transition"
-                    >
-                      Contact Us
-                    </button>
-                  ) : (
+                  ) : price === null ? null : (
                     <>
                       <p className="text-lg font-bold text-white">
                         {price === 0 ? "Free" : `$${price}`}

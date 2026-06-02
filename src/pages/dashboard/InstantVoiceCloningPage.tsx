@@ -126,8 +126,8 @@ export default function InstantVoiceCloningPage() {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   }
 
-  // Check if user has access to denoise feature (Plus and Pro plans only)
-  const canUseDenoise = user?.plan === "plus" || user?.plan === "pro";
+  // Check if user has access to denoise feature (Pro, Startup, and Scale plans only)
+  const canUseDenoise = user?.plan === "pro" || user?.plan === "startup" || user?.plan === "scale";
 
   /**
    * Denoise audio if the feature is enabled and user has access
@@ -547,7 +547,7 @@ export default function InstantVoiceCloningPage() {
                 ))}
               </div>
 
-              {/* Background Noise Removal Toggle (Plus & Pro only) */}
+              {/* Background Noise Removal Toggle (Pro, Startup, and Scale only) */}
               {canUseDenoise && (
                 <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                   <div className="flex flex-col gap-0.5">

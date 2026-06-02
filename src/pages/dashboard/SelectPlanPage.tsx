@@ -20,60 +20,60 @@ const plans: PlanCard[] = [
     id: "free",
     label: "Free",
     price: "$0",
-    credits: "500 credits/mo",
+    credits: "1,000 credits/mo",
     icon: <Zap size={24} />,
     features: [
       "1 voice clone",
       "5 emotions (happy, sad, angry, calm, confused)",
-      "500 monthly credits",
+      "1,000 monthly credits",
       "1 credit per 20 characters",
       "10 credits per voice clone",
-    ],
-  },
-  {
-    id: "plus",
-    label: "Plus",
-    price: "$29",
-    credits: "5,000 credits/mo",
-    icon: <Rocket size={24} />,
-    highlight: true,
-    features: [
-      "Unlimited voice clones",
-      "All 23 emotions",
-      "5,000 monthly credits",
-      "1 credit per 20 characters",
-      "10 credits per voice clone",
-      "Priority support",
     ],
   },
   {
     id: "pro",
     label: "Pro",
-    price: "$99",
-    credits: "25,000 credits/mo",
+    price: "$4",
+    credits: "10,000 credits/mo",
     icon: <Crown size={24} />,
+    highlight: true,
     features: [
       "Unlimited voice clones",
       "All 23 emotions",
-      "25,000 monthly credits",
+      "10,000 monthly credits",
       "1 credit per 20 characters",
       "10 credits per voice clone",
-      "Priority support",
       "API access",
     ],
   },
   {
-    id: "enterprise",
-    label: "Enterprise",
-    price: "Custom",
-    credits: "Unlimited",
+    id: "startup",
+    label: "Startup",
+    price: "$41",
+    credits: "70,000 credits/mo",
+    icon: <Rocket size={24} />,
+    features: [
+      "Unlimited voice clones",
+      "All 23 emotions",
+      "70,000 monthly credits",
+      "1 credit per 20 characters",
+      "10 credits per voice clone",
+      "Priority support",
+    ],
+  },
+  {
+    id: "scale",
+    label: "Scale",
+    price: "$254",
+    credits: "500,000 credits/mo",
     icon: <Shield size={24} />,
     features: [
-      "Unlimited everything",
-      "Custom credit allocation",
-      "Dedicated support",
-      "SLA guarantee",
-      "On-premise deployment",
+      "Unlimited voice clones",
+      "All 23 emotions",
+      "500,000 monthly credits",
+      "1 credit per 20 characters",
+      "10 credits per voice clone",
+      "SLA support",
     ],
   },
 ];
@@ -95,10 +95,6 @@ export default function SelectPlanPage() {
           clearIsNew();
           navigate("/dashboard/overview");
         }
-      } else if (plan === "enterprise") {
-        // Enterprise — contact us
-        clearIsNew();
-        navigate("/dashboard/overview");
       } else {
         // Paid plans — redirect to Stripe Checkout
         const res = await createCheckoutSession(token, plan, "monthly");
@@ -109,18 +105,7 @@ export default function SelectPlanPage() {
       }
     } catch (e: any) {
       console.error("Plan selection error:", e);
-      // If Stripe not configured, fall back to instant activation for testing
-      if (e.status === 503 || e.status === 400) {
-        try {
-          await selectPlan(token, plan);
-          await refreshUser();
-          clearIsNew();
-          navigate("/dashboard/overview");
-        } catch {
-          clearIsNew();
-          navigate("/dashboard/overview");
-        }
-      } else {
+      if (plan === "free") {
         clearIsNew();
         navigate("/dashboard/overview");
       }
@@ -194,9 +179,7 @@ export default function SelectPlanPage() {
               >
                 {loading === plan.id
                   ? "Activating..."
-                  : plan.id === "enterprise"
-                    ? "Contact us"
-                    : `Select ${plan.label}`}
+                  : `Select ${plan.label}`}
               </button>
             </div>
           ))}

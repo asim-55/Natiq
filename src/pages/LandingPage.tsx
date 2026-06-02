@@ -76,7 +76,7 @@ export default function LandingPage() {
               {[
                 { icon: <Zap />, label: "Low latency", detail: "GPU-optimized inference pipeline" },
                 { icon: <ShieldCheck />, label: "Enterprise security", detail: "JWT + API token auth, per-user isolation" },
-                { icon: <BarChart3 />, label: "Credit tracking", detail: "500 free credits, 1 per 20 characters" },
+                { icon: <BarChart3 />, label: "Credit tracking", detail: "1,000 free credits, 1 per 20 characters" },
                 { icon: <Network />, label: "REST API", detail: "Simple JSON endpoints for any stack" },
               ].map((item) => (
                 <div key={item.label} className="soft-card p-6">
@@ -138,7 +138,7 @@ export default function LandingPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200">Pricing</p>
             <h2 className="mt-4 text-4xl font-semibold text-white sm:text-5xl">Start free. Scale when ready.</h2>
             <p className="mx-auto mt-6 max-w-xl text-lg text-slate-300">
-              Every new account gets 500 free credits. 1 credit per 20 characters of generated speech.
+              Every new account gets 1,000 free credits. 1 credit per 20 characters of generated speech.
             </p>
             <button className="primary-button mx-auto mt-10 px-8 py-4 text-base" onClick={cta}>
               {user ? "Go to dashboard" : "Create free account"}
@@ -153,7 +153,7 @@ export default function LandingPage() {
             <div className="soft-card p-8 text-center sm:p-12">
               <h2 className="text-3xl font-semibold text-white sm:text-4xl">Ready to transform your voice pipeline?</h2>
               <p className="mx-auto mt-4 max-w-lg text-lg text-slate-300">
-                Contact our team for enterprise plans, custom model fine-tuning, and dedicated infrastructure.
+                Contact our team for custom deployments, model fine-tuning, and dedicated infrastructure.
               </p>
               <button className="primary-button mx-auto mt-8 px-8 py-4 text-base" onClick={cta}>
                 Get in touch <ArrowRight size={18} />

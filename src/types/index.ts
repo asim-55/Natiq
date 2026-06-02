@@ -1,6 +1,6 @@
 export type DashboardTab = "overview" | "voice" | "history" | "settings";
 
-export type PlanName = "free" | "plus" | "pro" | "enterprise";
+export type PlanName = "free" | "pro" | "startup" | "scale";
 
 export interface User {
   id: number;

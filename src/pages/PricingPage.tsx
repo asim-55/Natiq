@@ -3,7 +3,6 @@ import { Check, Crown, Rocket, Shield, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import SignInModal from "../auth/SignInModal";
-import ContactModal from "../components/ContactModal";
 import PricingCalculator from "../components/PricingCalculator";
 
 interface PlanCard {
@@ -21,60 +20,60 @@ const plans: PlanCard[] = [
     label: "Free",
     monthlyPrice: 0,
     annualPrice: 0,
-    credits: "500 credits/mo",
+    credits: "1,000 credits/mo",
     icon: <Zap size={24} />,
     features: [
       "1 voice clone",
       "5 emotions (happy, sad, angry, calm, confused)",
-      "500 monthly credits",
+      "1,000 monthly credits",
       "1 credit per 20 characters",
       "10 credits per voice clone",
-    ],
-  },
-  {
-    label: "Plus",
-    monthlyPrice: 29,
-    annualPrice: 23,
-    credits: "5,000 credits/mo",
-    icon: <Rocket size={24} />,
-    highlight: true,
-    features: [
-      "Unlimited voice clones",
-      "All 23 emotions",
-      "5,000 monthly credits",
-      "1 credit per 20 characters",
-      "10 credits per voice clone",
-      "Priority support",
     ],
   },
   {
     label: "Pro",
-    monthlyPrice: 99,
-    annualPrice: 79,
-    credits: "25,000 credits/mo",
+    monthlyPrice: 4,
+    annualPrice: 3,
+    credits: "10,000 credits/mo",
     icon: <Crown size={24} />,
+    highlight: true,
     features: [
       "Unlimited voice clones",
       "All 23 emotions",
-      "25,000 monthly credits",
+      "10,000 monthly credits",
       "1 credit per 20 characters",
       "10 credits per voice clone",
-      "Priority support",
       "API access",
     ],
   },
   {
-    label: "Enterprise",
-    monthlyPrice: null,
-    annualPrice: null,
-    credits: "Unlimited",
+    label: "Startup",
+    monthlyPrice: 41,
+    annualPrice: 33,
+    credits: "70,000 credits/mo",
+    icon: <Rocket size={24} />,
+    features: [
+      "Unlimited voice clones",
+      "All 23 emotions",
+      "70,000 monthly credits",
+      "1 credit per 20 characters",
+      "10 credits per voice clone",
+      "Priority support",
+    ],
+  },
+  {
+    label: "Scale",
+    monthlyPrice: 254,
+    annualPrice: 203,
+    credits: "500,000 credits/mo",
     icon: <Shield size={24} />,
     features: [
-      "Unlimited everything",
-      "Custom credit allocation",
-      "Dedicated support",
-      "SLA guarantee",
-      "On-premise deployment",
+      "Unlimited voice clones",
+      "All 23 emotions",
+      "500,000 monthly credits",
+      "1 credit per 20 characters",
+      "10 credits per voice clone",
+      "SLA support",
     ],
   },
 ];
@@ -84,14 +83,8 @@ export default function PricingPage() {
   const navigate = useNavigate();
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
   const [modalOpen, setModalOpen] = useState(false);
-  const [contactModalOpen, setContactModalOpen] = useState(false);
 
   const handleGetStarted = (planLabel: string) => {
-    if (planLabel === "Enterprise") {
-      setContactModalOpen(true);
-      return;
-    }
-    
     if (user) {
       navigate("/dashboard/overview");
     } else {
@@ -102,7 +95,6 @@ export default function PricingPage() {
   return (
     <>
       <SignInModal open={modalOpen} onClose={() => setModalOpen(false)} />
-      <ContactModal open={contactModalOpen} onClose={() => setContactModalOpen(false)} />
       <main className="relative z-10 pt-28 pb-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -127,7 +119,7 @@ export default function PricingPage() {
                   ${billing === b ? "bg-cyan-300 text-ink-950" : "text-slate-400 hover:text-white"}`}
               >
                 {b}
-                {b === "annual" && <span className="ml-1.5 text-xs font-semibold text-green-400">Save 20%</span>}
+                {b === "annual" && <span className="ml-1.5 text-xs font-semibold text-green-400">Save with annual</span>}
               </button>
             ))}
           </div>
@@ -197,7 +189,7 @@ export default function PricingPage() {
                       : "border border-white/10 bg-white/10 text-white hover:bg-white/20"
                   }`}
                 >
-                  {plan.label === "Enterprise" ? "Contact us" : "Get started"}
+                  Get started
                 </button>
               </div>
             );

@@ -121,7 +121,7 @@ const content: Record<string, { eyebrow: string; title: string; text: string; ca
       },
       {
         title: "Flexible Pricing",
-        text: "Pay only for what you use with our credit-based system. Free tier for testing, Plus for creators, and Pro for high-volume production with volume discounts.",
+        text: "Pay only for what you use with our credit-based system. Free tier for testing, Pro for starting out, and Startup or Scale for higher-volume production.",
         icon: DollarSign
       },
       {

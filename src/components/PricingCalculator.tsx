@@ -28,8 +28,8 @@ function timeToCredits(time: number, unit: TimeUnit): string {
 }
 
 export default function PricingCalculator() {
-  const [credits, setCredits] = useState("750");
-  const [time, setTime] = useState(() => creditsToTime(750, "Minutes"));
+  const [credits, setCredits] = useState("1000");
+  const [time, setTime] = useState(() => creditsToTime(1000, "Minutes"));
   const [timeUnit, setTimeUnit] = useState<TimeUnit>("Minutes");
   const [creditUnit] = useState("Credits");
 

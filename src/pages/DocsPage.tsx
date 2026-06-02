@@ -27,7 +27,7 @@ const endpoints: Endpoint[] = [
     method: "POST",
     path: "/auth/signup",
     title: "Sign up",
-    description: "Create a new account with email and password. Returns JWT access token and user profile. New users receive 500 free credits.",
+    description: "Create a new account with email and password. Returns JWT access token and user profile. New users receive 1,000 free credits.",
     auth: false,
     body: `{
   "email": "you@example.com",
@@ -127,7 +127,7 @@ const endpoints: Endpoint[] = [
     method: "POST",
     path: "/generate-audio-emotion",
     title: "Generate audio with emotion",
-    description: "Generate expressive Roman Urdu speech with one of 23 emotions. Supports Urdu text (both Urdu script and Roman Urdu). Costs 1 credit per 20 characters. Returns WAV audio file. Available on Plus and Pro plans. Optional: speed (0.5-2.0, default 1.0) and volume (0.0-2.0, default 1.0).",
+    description: "Generate expressive Roman Urdu speech with one of 23 emotions. Supports Urdu text (both Urdu script and Roman Urdu). Costs 1 credit per 20 characters. Returns WAV audio file. Available on Pro, Startup, and Scale plans. Optional: speed (0.5-2.0, default 1.0) and volume (0.0-2.0, default 1.0).",
     auth: true,
     body: `{
   "text": "Aaj ka din bohat khoobsurat hai",
@@ -410,7 +410,7 @@ export default function DocsPage() {
                   <ol className="space-y-2 text-sm text-slate-300">
                     <li className="flex items-start gap-3">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-bold text-cyan-300 flex-shrink-0">1</span>
-                      <span><code className="text-cyan-300">POST /auth/signup</code> — Create account, receive 500 free credits</span>
+                      <span><code className="text-cyan-300">POST /auth/signup</code> — Create account, receive 1,000 free credits</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400/20 text-xs font-bold text-cyan-300 flex-shrink-0">2</span>
@@ -440,7 +440,7 @@ export default function DocsPage() {
                 ))}
               </div>
               <p className="text-xs text-slate-400">
-                All emotions available on Plus and Pro plans. Free plan supports neutral only.
+                All emotions available on Pro, Startup, and Scale plans. Free plan supports a limited emotion set.
               </p>
             </div>
 

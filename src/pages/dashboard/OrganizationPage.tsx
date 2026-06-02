@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle, Building2, Check, ChevronDown, Globe, Linkedin,
-  Loader2, Mail, Plus, Shield, Trash2, Twitter, UserMinus, X,
+  Loader2, Mail, Plus, Trash2, Twitter, UserMinus, X,
 } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import {
@@ -14,7 +14,13 @@ import type { OrgInvitation, OrgMember, Organization, OrgRole } from "../../type
 // Toast
 // ---------------------------------------------------------------------------
 
-interface ToastMsg { id: number; type: "success" | "error" | "warn"; text: string }
+interface ToastMsg {
+  id: number;
+  type: "success" | "error" | "warn";
+  text: string;
+  actionLabel?: string;
+  onAction?: () => void | Promise<void>;
+}
 
 function useToast() {
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
@@ -22,9 +28,13 @@ function useToast() {
 
   const dismiss = (id: number) => setToasts(t => t.filter(x => x.id !== id));
 
-  const show = (text: string, type: ToastMsg["type"] = "success") => {
+  const show = (
+    text: string,
+    type: ToastMsg["type"] = "success",
+    action?: { label: string; onClick: () => void | Promise<void> },
+  ) => {
     const id = ++counter.current;
-    setToasts(t => [...t, { id, type, text }]);
+    setToasts(t => [...t, { id, type, text, actionLabel: action?.label, onAction: action?.onClick }]);
     setTimeout(() => dismiss(id), 5000);
   };
   return { toasts, show, dismiss };
@@ -36,12 +46,23 @@ function ToastContainer({ toasts, onDismiss }: { toasts: ToastMsg[]; onDismiss: 
       {toasts.map(t => (
         <div
           key={t.id}
-          className={`flex items-start gap-3 rounded-2xl px-4 py-3 text-sm shadow-lg
+          className={`toast-slide-in flex items-start gap-3 rounded-2xl px-4 py-3 text-sm shadow-lg
             ${t.type === "success" ? "bg-cyan-300/20 border border-cyan-300/40 text-cyan-100"
               : t.type === "warn" ? "bg-amber-400/20 border border-amber-400/40 text-amber-100"
               : "bg-red-500/20 border border-red-500/40 text-red-200"}`}
         >
           <span className="flex-1">{t.text}</span>
+          {t.actionLabel && t.onAction && (
+            <button
+              onClick={() => {
+                void t.onAction?.();
+                onDismiss(t.id);
+              }}
+              className="rounded-lg border border-white/10 bg-white/10 px-2 py-1 text-xs font-semibold text-white hover:bg-white/20"
+            >
+              {t.actionLabel}
+            </button>
+          )}
           <button onClick={() => onDismiss(t.id)} className="mt-0.5 opacity-60 hover:opacity-100">
             <X size={14} />
           </button>
@@ -304,7 +325,7 @@ function RoleDropdown({
 // Tabs
 // ---------------------------------------------------------------------------
 
-type Tab = "general" | "members" | "sso";
+type Tab = "general" | "members";
 
 // ---------------------------------------------------------------------------
 // Main page
@@ -412,16 +433,35 @@ export default function OrganizationPage() {
     });
   };
 
+  const handleUndoRole = async (userId: number, originalRole: OrgRole) => {
+    if (!token || !org) return;
+    setRoleBusyId(userId);
+    try {
+      await changeMemberRole(token, org.id, userId, originalRole);
+      setMembers(m => m.map(x => x.user_id === userId ? { ...x, role: originalRole } : x));
+      setPendingRoles((prev) => { const copy = { ...prev }; delete copy[userId]; return copy; });
+    } catch (e: any) {
+      show(e.message || "Failed to undo role change", "error");
+    } finally {
+      setRoleBusyId(null);
+    }
+  };
+
   const handleConfirmRole = async (userId: number) => {
     if (!token || !org) return;
     const newRole = pendingRoles[userId];
     if (!newRole) return;
+    const originalRole = members.find(m => m.user_id === userId)?.role;
+    if (!originalRole) return;
     setRoleBusyId(userId);
     try {
       await changeMemberRole(token, org.id, userId, newRole);
       setMembers(m => m.map(x => x.user_id === userId ? { ...x, role: newRole } : x));
       setPendingRoles((prev) => { const copy = { ...prev }; delete copy[userId]; return copy; });
-      show("Role updated");
+      show("The role has been changed", "success", {
+        label: "Undo",
+        onClick: () => handleUndoRole(userId, originalRole),
+      });
     } catch (e: any) {
       show(e.message, "error");
     } finally {
@@ -548,7 +588,7 @@ export default function OrganizationPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-white/10">
-          {(["general", "members", "sso"] as Tab[]).map(tab => (
+          {(["general", "members"] as Tab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -796,29 +836,6 @@ export default function OrganizationPage() {
           </div>
         )}
 
-        {/* ---------------------------------------------------------------- */}
-        {/* SSO tab                                                           */}
-        {/* ---------------------------------------------------------------- */}
-        {activeTab === "sso" && (
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
-            <div className="mb-5 flex justify-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-cyan-300/10 border border-cyan-300/20">
-                <Shield size={24} className="text-cyan-300" />
-              </div>
-            </div>
-            <h3 className="text-base font-semibold text-white mb-2">SSO available for Enterprise plans</h3>
-            <p className="text-sm text-slate-400 mb-5">
-              Enable Single Sign-On with SAML 2.0 or OIDC for your organization.
-              Enforce login via your identity provider and manage user provisioning.
-            </p>
-            <a
-              href="mailto:support@natiq.ai"
-              className="inline-flex items-center gap-2 rounded-2xl bg-white/10 border border-white/10 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/15"
-            >
-              <Mail size={14} /> Contact support
-            </a>
-          </div>
-        )}
       </div>
 
       {/* Modals */}

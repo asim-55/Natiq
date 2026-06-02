@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Check, Crown, Rocket, Shield, X, Zap } from "lucide-react";
+import { Crown, Rocket, Shield, X } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
-import { selectPlan } from "../api/client";
+import { createCheckoutSession } from "../api/client";
 import type { PlanName } from "../types";
 
 interface Props {
@@ -11,14 +11,13 @@ interface Props {
 }
 
 const plans: { id: PlanName; label: string; price: string; icon: React.ReactNode; highlight?: boolean }[] = [
-  { id: "free", label: "Free", price: "$0/mo", icon: <Zap size={18} /> },
-  { id: "plus", label: "Plus", price: "$29/mo", icon: <Rocket size={18} />, highlight: true },
-  { id: "pro", label: "Pro", price: "$99/mo", icon: <Crown size={18} /> },
-  { id: "enterprise", label: "Enterprise", price: "Custom", icon: <Shield size={18} /> },
+  { id: "pro", label: "Pro", price: "$4/mo", icon: <Crown size={18} />, highlight: true },
+  { id: "startup", label: "Startup", price: "$41/mo", icon: <Rocket size={18} /> },
+  { id: "scale", label: "Scale", price: "$254/mo", icon: <Shield size={18} /> },
 ];
 
 export default function UpgradeModal({ open, onClose, message }: Props) {
-  const { token, refreshUser } = useAuth();
+  const { token } = useAuth();
   const [loading, setLoading] = useState<PlanName | null>(null);
 
   if (!open) return null;
@@ -27,9 +26,11 @@ export default function UpgradeModal({ open, onClose, message }: Props) {
     if (!token) return;
     setLoading(plan);
     try {
-      await selectPlan(token, plan);
-      await refreshUser();
-      onClose();
+      const res = await createCheckoutSession(token, plan, "monthly");
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+        return;
+      }
     } catch {
       onClose();
     } finally {
@@ -84,7 +85,7 @@ export default function UpgradeModal({ open, onClose, message }: Props) {
         </div>
 
         <p className="mt-4 text-center text-xs text-slate-500">
-          Plans activate instantly. No payment required for now.
+          Paid plans are processed securely via Stripe.
         </p>
       </div>
     </div>
