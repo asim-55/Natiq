@@ -36,7 +36,7 @@ const PLANS: PlanDef[] = [
     credits: "70,000 credits / mo",
     voices: "Unlimited voices",
     icon: <Rocket size={18} />,
-    features: ["70,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "Priority queue", "API access"],
+    features: ["70,000 monthly credits", "Unlimited voice clones", "All 23 emotions",  "API access"],
   },
   {
     id: "scale",
@@ -46,7 +46,7 @@ const PLANS: PlanDef[] = [
     credits: "500,000 credits / mo",
     voices: "Unlimited voices",
     icon: <Shield size={18} />,
-    features: ["500,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "Dedicated queue", "Analytics", "SLA support"],
+    features: ["500,000 monthly credits", "Unlimited voice clones", "All 23 emotions"],
   },
   {
     id: "enterprise",
@@ -56,7 +56,7 @@ const PLANS: PlanDef[] = [
     credits: "Custom credits",
     voices: "Unlimited voices",
     icon: <Building2 size={18} />,
-    features: ["Custom volume", "Unlimited voice clones", "All 23 emotions", "Dedicated support", "Custom SLA"],
+    features: ["Custom volume", "Unlimited voice clones", "All 23 emotions"],
   },
 ];
 
@@ -184,7 +184,7 @@ export default function SubscriptionPage() {
   const totalCredits = user?.credits ?? 0;
   const planMaxCredits =
     currentPlan === "free" ? 1000 : currentPlan === "pro" ? 10000 : currentPlan === "startup" ? 70000 : currentPlan === "scale" ? 500000 : currentPlan === "enterprise" ? 999999 : 1000;
-  const creditPct = Math.min(100, Math.round((totalCredits / planMaxCredits) * 100));
+  const creditRemainingPct = Math.min(100, Math.round((totalCredits / planMaxCredits) * 100));
   const currentPlanLabel = currentPlan === "enterprise" ? "Enterprise" : currentPlan === "startup" ? "Startup" : currentPlan === "scale" ? "Scale" : currentPlan === "pro" ? "Pro" : "Free";
   const billingDisplayDate = isCancelling && cancelAt
     ? new Date(cancelAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
@@ -209,9 +209,9 @@ export default function SubscriptionPage() {
             <span className="mt-1 flex h-2.5 w-2.5 rounded-full bg-green-400 shadow-[0_0_6px_2px_rgba(74,222,128,0.5)]" />
           </div>
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-cyan-300 transition-all" style={{ width: `${creditPct}%` }} />
+            <div className="h-full rounded-full bg-cyan-300 transition-all" style={{ width: `${creditRemainingPct}%` }} />
           </div>
-          <p className="mt-2 text-xs text-slate-500">{creditPct}% used · resets monthly</p>
+          <p className="mt-2 text-xs text-slate-500">{creditRemainingPct}% remaining · resets monthly</p>
         </div>
 
         {/* Subscription plan */}
