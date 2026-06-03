@@ -39,7 +39,7 @@ const plans: PlanCard[] = [
     icon: <Crown size={24} />,
     highlight: true,
     features: [
-      "Unlimited voice clones",
+      "5 voice uploads",
       "All 23 emotions",
       "10,000 monthly credits",
       "1 credit per 20 characters",

@@ -24,9 +24,9 @@ const PLANS: PlanDef[] = [
     monthlyPrice: 4,
     annualPrice: 3,
     credits: "10,000 credits / mo",
-    voices: "Unlimited voices",
+    voices: "5 voice uploads",
     icon: <Crown size={18} />,
-    features: ["10,000 monthly credits", "Unlimited voice clones", "All 23 emotions", "API access"],
+    features: ["10,000 monthly credits", "5 voice uploads", "All 23 emotions", "API access"],
   },
   {
     id: "startup",
