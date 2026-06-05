@@ -152,7 +152,7 @@ const endpoints: Endpoint[] = [
     description: "Generate neutral Roman Urdu speech without emotion tags. Supports 23+ languages including Arabic, English, Hindi, and more. Costs 1 credit per 20 characters. Returns WAV audio file. Available on all plans. Optional: speed (0.5-2.0, default 1.0) and volume (0.0-2.0, default 1.0).",
     auth: true,
     body: `{
-  "text": "Welcome to Natiq voice platform",
+  "text": "Welcome to Mayna voice platform",
   "language": "en",
   "voice_reference_id": "<VOICE_ID>",
   "speed": 1.0,
@@ -161,7 +161,7 @@ const endpoints: Endpoint[] = [
     curl: `curl -s ${BASE}/generate-audio-no-emotion \\
   -H "Authorization: Bearer <TOKEN>" \\
   -H "Content-Type: application/json" \\
-  -d '{"text":"Welcome to Natiq voice platform","language":"en","voice_reference_id":"<VOICE_ID>","speed":1.0,"volume":1.0}' \\
+  -d '{"text":"Welcome to Mayna voice platform","language":"en","voice_reference_id":"<VOICE_ID>","speed":1.0,"volume":1.0}' \\
   --output output.wav`,
     responseNote: "Returns audio/wav file",
   },
@@ -392,7 +392,7 @@ export default function DocsPage() {
                 <span className="text-xs font-semibold text-cyan-300">API Reference</span>
               </div>
               <h1 className="text-4xl font-bold text-white sm:text-5xl mb-4">
-                Natiq API Documentation
+                Mayna API Documentation
               </h1>
               <p className="text-lg leading-8 text-slate-300 max-w-3xl">
                 Generate expressive Roman Urdu speech with 23 emotion styles. All authenticated endpoints accept either a JWT session token or a long-lived <code className="rounded bg-white/10 px-1.5 py-0.5 text-cyan-200">psk_</code> API token.

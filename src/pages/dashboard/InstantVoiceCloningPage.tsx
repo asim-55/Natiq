@@ -25,7 +25,7 @@ const RECORD_TIPS = [
   "Avoid clipping — stay consistent in volume",
 ];
 
-const SAMPLE_SCRIPT = `Welcome to Paysys, your secure AI voice banking platform.
+const SAMPLE_SCRIPT = `Welcome to Mayna, your secure AI voice banking platform.
 To confirm your transaction, please say your four-digit PIN followed by your account number.
 Your voice print is now being verified. Thank you for banking with us.`;
 

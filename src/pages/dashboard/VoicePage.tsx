@@ -42,7 +42,7 @@ export default function VoicePage() {
   const [language, setLanguage] = useState("ur");
   const [emotionType, setEmotionType] = useState("NEUTRAL");
   const [voiceScript, setVoiceScript] = useState(
-    "Welcome to Paysys. Your secure banking voice flow is ready for real-time playback."
+    "Welcome to Mayna. Your secure banking voice flow is ready for real-time playback."
   );
   const [speed, setSpeed] = useState(1);
   const [volume, setVolume] = useState(1);

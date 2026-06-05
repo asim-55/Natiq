@@ -5,7 +5,7 @@ const content: Record<string, { eyebrow: string; title: string; text: string; ca
   docs: {
     eyebrow: "Documentation",
     title: "Build Urdu voice into your product",
-    text: "Comprehensive API documentation, SDKs, and implementation guides for integrating Natiq's expressive Roman Urdu text-to-speech into your applications.",
+    text: "Comprehensive API documentation, SDKs, and implementation guides for integrating Mayna's expressive Roman Urdu text-to-speech into your applications.",
     cards: [
       {
         title: "Quick start",
@@ -38,17 +38,17 @@ const content: Record<string, { eyebrow: string; title: string; text: string; ca
     ],
   },
   about: {
-    eyebrow: "About Natiq",
+    eyebrow: "About Mayna",
     title: "Where Text finds its voice",
-    text: "Natiq is an expressive Text-to-Speech system primarily designed for Roman Urdu, built for the way Pakistanis actually type, speak, and communicate online. While optimized for Urdu with 23 emotional styles, Natiq also supports 20+ languages including English, Arabic, Hindi, Turkish, and more for neutral speech generation.",
+    text: "Mayna is an expressive Text-to-Speech system primarily designed for Roman Urdu, built for the way Pakistanis actually type, speak, and communicate online. While optimized for Urdu with 23 emotional styles, Mayna also supports 20+ languages including English, Arabic, Hindi, Turkish, and more for neutral speech generation.",
     cards: [
       {
         title: "Primarily Built for Urdu",
-        text: "Roman Urdu is our specialty with its unique rhythm, spelling variations, and expressions. Natiq handles everyday Roman Urdu like 'Kya haal hai?', 'Yaar mujhe samajh nahi aayi', and 'Aaj ka din bohat acha hai' with natural, fluent pronunciation. Full emotion support is available exclusively for Urdu.",
+        text: "Roman Urdu is our specialty with its unique rhythm, spelling variations, and expressions. Mayna handles everyday Roman Urdu like 'Kya haal hai?', 'Yaar mujhe samajh nahi aayi', and 'Aaj ka din bohat acha hai' with natural, fluent pronunciation. Full emotion support is available exclusively for Urdu.",
       },
       {
         title: "23 Emotional Voices",
-        text: "Every sentence has feeling behind it. Natiq gives you control over emotional delivery with 23 distinct voice styles: happy, sad, angry, excited, calm, dramatic, romantic, serious, funny, motivational, poetic, and more.",
+        text: "Every sentence has feeling behind it. Mayna gives you control over emotional delivery with 23 distinct voice styles: happy, sad, angry, excited, calm, dramatic, romantic, serious, funny, motivational, poetic, and more.",
       },
       {
         title: "For Creators & Developers",
@@ -56,7 +56,7 @@ const content: Record<string, { eyebrow: string; title: string; text: string; ca
       },
       {
         title: "Instant Voice Cloning",
-        text: "Upload a short audio sample (10-30 seconds) and Natiq will clone that voice for all your generations. Maintain brand consistency or create unique character voices for your content.",
+        text: "Upload a short audio sample (10-30 seconds) and Mayna will clone that voice for all your generations. Maintain brand consistency or create unique character voices for your content.",
       },
       {
         title: "Enterprise Ready",
@@ -64,18 +64,18 @@ const content: Record<string, { eyebrow: string; title: string; text: string; ca
       },
       {
         title: "Multilingual Support",
-        text: "While Urdu is our primary focus with full emotion control, Natiq also generates neutral speech in 20+ languages including English, Arabic, Hindi, Punjabi, Turkish, Bengali, Spanish, French, German, and more — perfect for multilingual applications.",
+        text: "While Urdu is our primary focus with full emotion control, Mayna also generates neutral speech in 20+ languages including English, Arabic, Hindi, Punjabi, Turkish, Bengali, Spanish, French, German, and more — perfect for multilingual applications.",
       },
       {
         title: "Natural Speech Flow",
-        text: "Natiq understands casual tone, friendly pauses, desi conversational rhythm, soft emotional delivery, dramatic storytelling flow, and natural emphasis — speaking like people actually talk.",
+        text: "Mayna understands casual tone, friendly pauses, desi conversational rhythm, soft emotional delivery, dramatic storytelling flow, and natural emphasis — speaking like people actually talk.",
       },
     ],
   },
   blog: {
     eyebrow: "Features",
     title: "Powerful voice capabilities for every use case",
-    text: "Discover Natiq's complete feature set built specifically for Roman Urdu. From emotional voice synthesis to instant cloning, multilingual support, and enterprise-grade infrastructure.",
+    text: "Discover Mayna's complete feature set built specifically for Roman Urdu. From emotional voice synthesis to instant cloning, multilingual support, and enterprise-grade infrastructure.",
     cards: [
       {
         title: "23 Emotional Voice Styles",
@@ -166,9 +166,9 @@ export default function ResourcePage() {
               )}
             </div>
             <div className="soft-card p-6">
-              <p className="text-sm text-slate-400">Natiq resource center</p>
+              <p className="text-sm text-slate-400">Mayna resource center</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                {(["docs", "about", "blog"] as const).map((item) => (
+                {(["docs", "about", "blog", "contact"] as const).map((item) => (
                   <Link
                     key={item}
                     to={`/${item}`}
@@ -178,7 +178,7 @@ export default function ResourcePage() {
                   >
                     <span className="block font-semibold capitalize">{item}</span>
                     <span className="mt-1 block text-sm text-slate-400">
-                      {item === "docs" ? "API and integration guides" : item === "about" ? "Mission and vision" : "Platform capabilities"}
+                      {item === "docs" ? "API and integration guides" : item === "about" ? "Mission and vision" : item === "blog" ? "Platform capabilities" : "Support and sales"}
                     </span>
                   </Link>
                 ))}
@@ -296,7 +296,7 @@ export default function ResourcePage() {
                 Give every word a voice that sounds truly human
               </h2>
               <p className="mt-4 text-lg leading-8 text-slate-300 mx-auto max-w-3xl">
-                Natiq is built for the way people actually write Urdu — casual, expressive, mixed, emotional, and real. We're creating voice technology that understands Pakistani communication patterns and delivers speech that feels natural, not robotic.
+                Mayna is built for the way people actually write Urdu — casual, expressive, mixed, emotional, and real. We're creating voice technology that understands Pakistani communication patterns and delivers speech that feels natural, not robotic.
               </p>
             </div>
           )}

@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           <div>
             <Link to="/" className="flex items-center gap-3">
-              <img src="/natiq_logo.png" alt="Natiq" className="h-12 w-auto" />
+              <img src="/mayna.png" alt="Mayna" className="h-12 w-auto" />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-6 text-slate-400">
               Enterprise-grade voice generation for the finance, telecom, and enterprise sectors.
@@ -15,7 +15,7 @@ export default function Footer() {
           </div>
           {[
             { title: "Product", links: [["Docs", "/docs"], ["Dashboard", "/dashboard"]] },
-            { title: "Company", links: [["About", "/about"], ["Blog", "/blog"]] },
+            { title: "Company", links: [["About", "/about"], ["Blog", "/blog"], ["Contact Us", "/contact"]] },
             { title: "Legal", links: [["Privacy", "#"], ["Terms", "#"]] },
           ].map((col) => (
             <div key={col.title}>
@@ -31,7 +31,7 @@ export default function Footer() {
           ))}
         </div>
         <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-slate-500">
-          &copy; {new Date().getFullYear()} Paysys. All rights reserved.
+          &copy; {new Date().getFullYear()} Mayna. All rights reserved.
         </div>
       </div>
     </footer>

@@ -56,7 +56,7 @@ export default function LandingPage() {
               at scale.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              Paysys delivers production-ready voice-over models for banking, IVR, customer engagement, and enterprise workflows. Two simple model families—emotion and neutral.
+              Mayna delivers production-ready voice-over models for banking, IVR, customer engagement, and enterprise workflows. Two simple model families—emotion and neutral.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <button className="primary-button px-8 py-4 text-base" onClick={cta}>
@@ -155,7 +155,7 @@ export default function LandingPage() {
               <p className="mx-auto mt-4 max-w-lg text-lg text-slate-300">
                 Contact our team for custom deployments, model fine-tuning, and dedicated infrastructure.
               </p>
-              <button className="primary-button mx-auto mt-8 px-8 py-4 text-base" onClick={cta}>
+              <button className="primary-button mx-auto mt-8 px-8 py-4 text-base" onClick={() => navigate("/contact")}>
                 Get in touch <ArrowRight size={18} />
               </button>
             </div>

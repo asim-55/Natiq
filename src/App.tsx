@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import ResourcePage from "./pages/ResourcePage";
 import DocsPage from "./pages/DocsPage";
 import PricingPage from "./pages/PricingPage";
+import ContactPage from "./pages/ContactPage";
 import DashboardLayout from "./pages/dashboard/DashboardLayout";
 import OverviewPage from "./pages/dashboard/OverviewPage";
 import VoicePage from "./pages/dashboard/VoicePage";
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/" element={<MarketingLayout><LandingPage /></MarketingLayout>} />
           <Route path="/docs" element={<MarketingLayout><DocsPage /></MarketingLayout>} />
           <Route path="/pricing" element={<MarketingLayout><PricingPage /></MarketingLayout>} />
+          <Route path="/contact" element={<MarketingLayout><ContactPage /></MarketingLayout>} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/:page" element={<MarketingLayout><ResourcePage /></MarketingLayout>} />

@@ -63,7 +63,7 @@ export default function OverviewPage() {
                 <Mic2 size={28} />
               </div>
               <div>
-                <h2 className="text-2xl font-semibold text-white">Welcome to Paysys!</h2>
+                <h2 className="text-2xl font-semibold text-white">Welcome to Mayna!</h2>
                 <p className="mt-1 text-sm text-slate-400">Upload a voice sample to get started with text-to-voice generation.</p>
               </div>
             </div>

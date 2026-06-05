@@ -176,7 +176,7 @@ export default function ContactModal({ open, onClose }: Props) {
               onChange={(e) => setUseCase(e.target.value)}
               required
               rows={3}
-              placeholder="Describe how you plan to use Natiq..."
+              placeholder="Describe how you plan to use Mayna..."
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/20 resize-none"
             />
           </div>

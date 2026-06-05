@@ -15,11 +15,11 @@ export default function Header() {
       <header className="fixed inset-x-0 top-0 z-30 border-b border-white/10 bg-ink-950/80 backdrop-blur-2xl">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3">
-            <img src="/natiq_logo.png" alt="Natiq" className="h-12 w-auto" />
+            <img src="/mayna.png" alt="Mayna" className="h-12 w-auto" />
           </Link>
 
           <div className="hidden items-center gap-8 lg:flex">
-            {[["Docs", "/docs"], ["Pricing", "/pricing"], ["About", "/about"], ["Blog", "/blog"]].map(([label, path]) => (
+            {[["Docs", "/docs"], ["Pricing", "/pricing"], ["About", "/about"], ["Blog", "/blog"], ["Contact Us", "/contact"]].map(([label, path]) => (
               <Link key={path} to={path} className="text-sm font-medium text-slate-300 transition hover:text-white">{label}</Link>
             ))}
           </div>
@@ -43,7 +43,7 @@ export default function Header() {
         {menuOpen && (
           <div className="border-t border-white/10 bg-ink-950/95 px-4 py-6 lg:hidden">
             <div className="flex flex-col gap-4">
-              {[["Docs", "/docs"], ["Pricing", "/pricing"], ["About", "/about"], ["Blog", "/blog"]].map(([label, path]) => (
+              {[["Docs", "/docs"], ["Pricing", "/pricing"], ["About", "/about"], ["Blog", "/blog"], ["Contact Us", "/contact"]].map(([label, path]) => (
                 <Link key={path} to={path} className="text-sm font-medium text-slate-300" onClick={() => setMenuOpen(false)}>{label}</Link>
               ))}
               {user ? (
